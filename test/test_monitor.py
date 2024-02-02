@@ -12,15 +12,12 @@ def test_DoubleQueue():
 
     This function tests the functionality of the AsyncDoubleQueue class by performing various test cases.
     """
-    # 初始化队列
     queue = DoubleQueue()
 
     print("\033[92mTest case: add data\033[0m")
-    # 异步添加数据
+
     for i in range(4096):
         queue.add_data(f"Data {i}")
-
-    # 可以在这里添加更多的异步测试逻辑，比如检查队列的状态等
 
     print("All test cases passed.")
 
