@@ -1,2 +1,2 @@
 # SAVD
-A demo for sava-anti DDoS simulation
+A demo for SAVA Anti-DDoS Architecture simulation
