@@ -2,8 +2,8 @@ import sys
 import asyncio
 
 sys.path.append('src')
-from config import Config
-from monitor import DoubleQueue, PacketInformationUpload, PacketSniffer, Transport
+from src.device.config import Config
+from src.device.monitor import DoubleQueue, PacketInformationUpload, PacketSniffer, Transport
 
 
 def test_DoubleQueue():
