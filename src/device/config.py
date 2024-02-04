@@ -17,3 +17,6 @@ class Config:
     sniffer_file_path = config.get('monitor', 'sniffer_file_path')
     sniffer_file_name = config.get('monitor', 'sniffer_file_name')
     sniffer_queue_size = config.getint('monitor', 'sniffer_queue_size')
+    sniffer_interface = config.get('monitor', 'sniffer_interface')
+    sniffer_upload_interval = config.getint('monitor',
+                                            'sniffer_upload_interval')

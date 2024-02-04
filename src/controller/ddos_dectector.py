@@ -4,6 +4,7 @@ import struct
 import glob
 from io import StringIO
 
+
 class SAVAPacketSniffer:
 
     def __init__(self, ip=None, port=None):
@@ -26,7 +27,7 @@ class SAVAPacketSniffer:
 
         csv_file = StringIO(message)
         csv_reader = csv.reader(csv_file)
-        
+
         with open("sniffer.csv", "a", newline='') as file:
             csv_writer = csv.writer(file)
             for row in csv_reader:
@@ -39,7 +40,6 @@ class SAVAPacketSniffer:
         print("Closing the connection")
         asyncio_writer.close()
 
-
     async def main(self, host, port):
         server = await asyncio.start_server(self.handle_client, host, port)
         addr = server.sockets[0].getsockname()
@@ -47,4 +47,3 @@ class SAVAPacketSniffer:
 
         async with server:
             await server.serve_forever()
-

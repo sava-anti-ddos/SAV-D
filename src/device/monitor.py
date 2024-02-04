@@ -1,10 +1,10 @@
-
 import os
 import csv
 import queue
 import asyncio
 import struct
 import threading
+import datetime
 from config import Config
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
@@ -19,7 +19,6 @@ class DoubleQueue:
         self.queue0 = queue.Queue(maxsize=Config.sniffer_queue_size)
         self.queue1 = queue.Queue(maxsize=Config.sniffer_queue_size)
         self.current_queue = 0
-        self.file_cnt = 0
 
     def add_data(self, data):
         """
@@ -45,7 +44,8 @@ class DoubleQueue:
         Writes the data from the queue to a file on disk and moves the file to an upload directory.
         """
         # csv file format to store the queue data
-        file_path = os.path.join(Config.sniffer_file_path, Config.sniffer_file_name)
+        file_path = os.path.join(Config.sniffer_file_path,
+                                 Config.sniffer_file_name)
         with open(file_path, 'a') as f:
             writer = csv.writer(f)
             while not queue.empty():
@@ -53,17 +53,21 @@ class DoubleQueue:
                 print(f"Writing data to file: {data}")
                 writer.writerow(data)
 
+        # move the file to the upload dir
+        self.move_file_to_upload(file_path)
+
+    def move_file_to_upload(self, file_path):
         # make a dir to store the file need to upload
         if not os.path.exists(f"{Config.sniffer_file_path}/upload"):
             os.makedirs(f"{Config.sniffer_file_path}/upload")
 
+        # rename the file by time
+        now = datetime.datetime.now()
+        current_time = now.strftime("%Y-%m-%d_%H-%M-%S")
         # move the file to the upload dir
         os.rename(
             file_path,
-            f"{Config.sniffer_file_path}/upload/{Config.sniffer_file_name}.{self.file_cnt}"
-        )
-
-        self.file_cnt += 1
+            f"{Config.sniffer_file_path}/upload/sniffer-{current_time}.csv")
 
 
 class PacketSniffer:
@@ -78,16 +82,6 @@ class PacketSniffer:
         else:
             self.interfaces = [Interface]
 
-        self.src_ip = None
-        self.dst_ip = None
-        self.src_port = None
-        self.dst_port = None
-        self.protocol = None
-
-        self.packet_len = None
-        self.flag = None
-        self.timestamp = None
-
     def sniff_interface(self, interface):
         """
         Sniffs packets on the specified network interface.
@@ -98,29 +92,38 @@ class PacketSniffer:
         """
         Handles the captured packet and extracts relevant information.
         """
+        src_ip = dst_ip = packet_len = None
+        protocol = None
+        src_port = dst_port = flags = None
+        flags_str = None
         if IP in packet:
-            self.src_ip = packet[IP].src
-            self.dst_ip = packet[IP].dst
-            self.packet_len = len(packet)
+            src_ip = packet[IP].src
+            dst_ip = packet[IP].dst
+            packet_len = len(packet)
 
         if TCP in packet:
-            self.protocol = "TCP"
-            self.src_port = packet[TCP].sport
-            self.dst_port = packet[TCP].dport
-            self.flags = packet[TCP].flags
+            protocol = "TCP"
+            src_port = packet[TCP].sport
+            dst_port = packet[TCP].dport
+            flags = packet[TCP].flags
+            # 将标志整数转换为标志列表的字符串表示
+            flags_str = packet.sprintf("%TCP.flags%")
         elif UDP in packet:
-            self.protocol = "UDP"
-            self.src_port = packet[UDP].sport
-            self.dst_port = packet[UDP].dport
+            protocol = "UDP"
+            src_port = packet[UDP].sport
+            dst_port = packet[UDP].dport
         elif ICMP in packet:
-            self.protocol = "ICMP"
+            protocol = "ICMP"
         elif ARP in packet:
-            self.protocol = "ARP"
+            protocol = "ARP"
 
-        self.timestamp = packet.time
+        timestamp = packet.time
 
-        packet_info = [self.src_ip, self.dst_ip, self.src_port, self.dst_port, self.protocol,  self.flag, self.timestamp, self.packet_len]
-        
+        packet_info = [
+            src_ip, dst_ip, src_port, dst_port,
+            protocol, flags_str, timestamp, packet_len
+        ]
+
         self.packet_sniffer_queue.add_data(packet_info)
 
     def start(self):
@@ -129,19 +132,11 @@ class PacketSniffer:
         """
         threads = []
         for interface in self.interfaces:
-            t = threading.Thread(target=self.sniff_interface, args=(interface,))
+            t = threading.Thread(target=self.sniff_interface,
+                                 args=(interface,),
+                                 daemon=True)
             threads.append(t)
             t.start()
-
-        for t in threads:
-            t.join()
-
-    def stop(self):
-        """
-        Stops sniffing on all available network interfaces.
-        """
-        print("========== Stopping Sniffing ==========")
-        exit()
 
 
 class PacketInformationUpload:
@@ -157,6 +152,9 @@ class PacketInformationUpload:
             self.upload_server_ip = ip
             self.upload_server_port = port
 
+        self.transport_bus = Transport(self.upload_server_ip,
+                                       self.upload_server_port)
+
     def format_lines_as_csv(self, lines):
         """Utility function to format lines as CSV data."""
         output = StringIO()
@@ -165,14 +163,13 @@ class PacketInformationUpload:
             writer.writerow(line)
         return output.getvalue()
 
-    def upload_packet_information(self, packet_information):
+    async def upload_packet_information(self, packet_information):
         """
         Uploads the packet information to the specified server.
         """
-        asyncio.run(
-            Transport(self.upload_server_ip, self.upload_server_port).upload(packet_information))
+        await self.transport_bus.upload(packet_information)
 
-    def get_data_from_local(self):
+    async def get_data_from_local(self):
         """
         Retrieves data from the local upload directory and uploads it to the server.
         """
@@ -194,16 +191,15 @@ class PacketInformationUpload:
                     if len(lines_buffer) == BUFFER_SIZE:
                         data_to_send = self.format_lines_as_csv(lines_buffer)
                         print(data_to_send)
-                        self.upload_packet_information(data_to_send)
+                        await self.upload_packet_information(data_to_send)
                         lines_buffer = []
 
                 if len(lines_buffer) > 0:
                     data_to_send = self.format_lines_as_csv(lines_buffer)
-                    self.upload_packet_information(data_to_send)
+                    await self.upload_packet_information(data_to_send)
 
-            os.rename(f"{file_path}/{file}", f"{file_path}/{file}.uploaded")
-            os.rename(f"{file_path}/{file}.uploaded",
-                      f"{Config.sniffer_file_path}/uploaded/{file}.uploaded")
+            os.rename(f"{file_path}/{file}",
+                      f"{Config.sniffer_file_path}/uploaded/{file}")
 
 
 class Transport:
