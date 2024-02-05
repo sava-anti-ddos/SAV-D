@@ -20,3 +20,7 @@ class Config:
     sniffer_interface = config.get('monitor', 'sniffer_interface')
     sniffer_upload_interval = config.getint('monitor',
                                             'sniffer_upload_interval')
+
+    # Get the receive rule configuration from the config file
+    heartbeat_interval = config.getint('connection', 'heartbeat_interval')
+    reconnect_interval = config.getint('connection', 'reconnect_interval')

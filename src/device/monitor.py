@@ -1,11 +1,10 @@
 import os
 import csv
 import queue
-import asyncio
-import struct
 import threading
 import datetime
 from config import Config
+from transport import Transport
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
 
@@ -57,6 +56,9 @@ class DoubleQueue:
         self.move_file_to_upload(file_path)
 
     def move_file_to_upload(self, file_path):
+        """
+        Moves the file to the upload directory.
+        """
         # make a dir to store the file need to upload
         if not os.path.exists(f"{Config.sniffer_file_path}/upload"):
             os.makedirs(f"{Config.sniffer_file_path}/upload")
@@ -106,7 +108,7 @@ class PacketSniffer:
             src_port = packet[TCP].sport
             dst_port = packet[TCP].dport
             flags = packet[TCP].flags
-            # 将标志整数转换为标志列表的字符串表示
+            # Convert the flags integer to a string representation of the flags list
             flags_str = packet.sprintf("%TCP.flags%")
         elif UDP in packet:
             protocol = "UDP"
@@ -120,8 +122,8 @@ class PacketSniffer:
         timestamp = packet.time
 
         packet_info = [
-            src_ip, dst_ip, src_port, dst_port,
-            protocol, flags_str, timestamp, packet_len
+            src_ip, dst_ip, src_port, dst_port, protocol, flags_str, timestamp,
+            packet_len
         ]
 
         self.packet_sniffer_queue.add_data(packet_info)
@@ -156,18 +158,20 @@ class PacketInformationUpload:
                                        self.upload_server_port)
 
     def format_lines_as_csv(self, lines):
-        """Utility function to format lines as CSV data."""
+        """
+        Utility function to format lines as CSV data.
+        """
         output = StringIO()
         writer = csv.writer(output)
         for line in lines:
             writer.writerow(line)
         return output.getvalue()
 
-    async def upload_packet_information(self, packet_information):
+    async def upload_packet_information(self, sniffer_data):
         """
         Uploads the packet information to the specified server.
         """
-        await self.transport_bus.upload(packet_information)
+        await self.transport_bus.send_data(1, sniffer_data)
 
     async def get_data_from_local(self):
         """
@@ -182,63 +186,20 @@ class PacketInformationUpload:
         for file in file_list:
             # if file not upload, upload it and rename it with .uploaded
             # then move it to the uploaded dir
-            BUFFER_SIZE = 1024  # Define the BUFFER_SIZE variable
+            BUFFER_SIZE = 128  # Define the BUFFER_SIZE variable
             with open(f"{file_path}/{file}", "r") as f:
                 csv_reader = csv.reader(f)
                 lines_buffer = []
                 for line in csv_reader:
                     lines_buffer.append(line)
                     if len(lines_buffer) == BUFFER_SIZE:
-                        data_to_send = self.format_lines_as_csv(lines_buffer)
-                        print(data_to_send)
-                        await self.upload_packet_information(data_to_send)
+                        print(lines_buffer)
+                        await self.upload_packet_information(lines_buffer)
                         lines_buffer = []
 
                 if len(lines_buffer) > 0:
-                    data_to_send = self.format_lines_as_csv(lines_buffer)
-                    await self.upload_packet_information(data_to_send)
+                    print(lines_buffer)
+                    await self.upload_packet_information(lines_buffer)
 
             os.rename(f"{file_path}/{file}",
                       f"{Config.sniffer_file_path}/uploaded/{file}")
-
-
-class Transport:
-    """
-    A class that handles the transport of data to the server.
-    """
-
-    def __init__(self, ip=None, port=None):
-        self.server_ip = ip
-        self.server_port = port
-
-    async def upload(self, data):
-        """
-        Uploads the data to the server.
-        """
-        await self.send_data(data)
-
-    async def send_data(self, data):
-        """
-        Sends the data to the server and receives a response.
-        """
-        try:
-            reader, writer = await asyncio.open_connection(
-                self.server_ip, self.server_port)
-
-            length = struct.pack("!I", len(data))
-            writer.write(length)
-            await writer.drain()
-
-            # send data
-            writer.write(data.encode())
-            await writer.drain()
-
-            # wait for response from server
-            buffer = await reader.read(128)
-            print(f"Received: {buffer.decode()}")
-
-            print("Close the connection")
-            writer.close()
-            await writer.wait_closed()
-        except Exception as e:
-            print(f"An error occurred: {e}")
