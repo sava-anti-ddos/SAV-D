@@ -1,18 +1,21 @@
 import asyncio
 
-from transport import TransportServer
-from config import Config
+from src.controller.transport_server import TransportServer
+from src.controller.controller_config import Config
 from issue_rules import IssueRules
+from ddos_dectector import SAVAPacketSniffer
 
 # Create a server instance and all the devices will connect to this
 server = TransportServer(Config.controller_ip, Config.controller_port)
 issue_rules = IssueRules(server)
+
 
 async def transport_server():
     """
     Function to start the transport server.
     """
     await server.start_server()
+
 
 async def issue_rules_main(rules):
     """
@@ -24,6 +27,7 @@ async def issue_rules_main(rules):
         await issue_rules.send_rules(rules)
     except Exception as e:
         print(f"Error in issue_rules_main: {e}")
+
 
 async def main():
     test_rules = [["127.0.0.1", 3306], ["127.0.0.1", 3307], ["127.0.0.1", 3308]]

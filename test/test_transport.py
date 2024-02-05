@@ -10,7 +10,7 @@ script_dir = os.path.dirname(__file__)  # 获取当前脚本的目录
 project_root = os.path.join(script_dir, '..')  # 计算项目根目录
 sys.path.append(os.path.normpath(project_root))  # 添加到sys.path
 
-from src.device.config import Config
+from src.device.device_config import Config
 
 
 class SAVDProtocol:
@@ -58,7 +58,8 @@ class TransportServer:
                 current_time = datetime.now()
                 disconnected_clients = []
                 for client, client_info in self.trust_clients.items():
-                    if current_time - client_info["last_heartbeat"] > self.heartbeat_timeout:
+                    if current_time - client_info[
+                            "last_heartbeat"] > self.heartbeat_timeout:
                         print(f"Client {client} timed out")
                         disconnected_clients.append(client)
                 for client in disconnected_clients:
@@ -101,9 +102,13 @@ class TransportServer:
                 print("Received heartbeat")
                 async with self.trust_clients_lock:
                     if client not in self.trust_clients:
-                        self.trust_clients[client] = {"last_heartbeat": datetime.now(), "writer": server[1]}
+                        self.trust_clients[client] = {
+                            "last_heartbeat": datetime.now(),
+                            "writer": server[1]
+                        }
                     else:
-                        self.trust_clients[client]["last_heartbeat"] = datetime.now()
+                        self.trust_clients[client][
+                            "last_heartbeat"] = datetime.now()
                         self.trust_clients[client]["writer"] = server[1]
 
                 print(f"Sending heartbeat response to {client}")

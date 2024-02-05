@@ -2,7 +2,7 @@ import asyncio
 import struct
 import json
 from datetime import datetime, timedelta
-from config import Config
+from src.controller.controller_config import Config
 from ddos_dectector import SAVAPacketSniffer
 
 
@@ -104,7 +104,8 @@ class TransportServer:
                 current_time = datetime.now()
                 disconnected_clients = []
                 for client, client_info in self.trust_clients.items():
-                    if current_time - client_info["last_heartbeat"] > self.heartbeat_timeout:
+                    if current_time - client_info[
+                            "last_heartbeat"] > self.heartbeat_timeout:
                         print(f"Client {client} timed out")
                         disconnected_clients.append(client)
                 for client in disconnected_clients:
@@ -170,9 +171,13 @@ class TransportServer:
                 print("Received heartbeat")
                 async with self.trust_clients_lock:
                     if client not in self.trust_clients:
-                        self.trust_clients[client] = {"last_heartbeat": datetime.now(), "writer": server[1]}
+                        self.trust_clients[client] = {
+                            "last_heartbeat": datetime.now(),
+                            "writer": server[1]
+                        }
                     else:
-                        self.trust_clients[client]["last_heartbeat"] = datetime.now()
+                        self.trust_clients[client][
+                            "last_heartbeat"] = datetime.now()
                         self.trust_clients[client]["writer"] = server[1]
 
                 print(f"Sending heartbeat response to {client}")

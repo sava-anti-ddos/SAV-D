@@ -1,6 +1,8 @@
 import asyncio
 
+
 class IssueRules:
+
     def __init__(self, transport=None):
         """
         Initializes an instance of the IssueRules class.

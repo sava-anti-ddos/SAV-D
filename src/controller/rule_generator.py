@@ -1,7 +1,3 @@
-from ip_blacklist import DB_Info
-from ip_blacklist import BlacklistDatabase
-
-
 #用于说明需要生成的规则组合，须在初始化时说明
 #eg： info=Information(['sip', 'sport', 'dport'] ),其会保存在info.data中
 #使用info.data来访问数据格式
@@ -9,9 +5,11 @@ from ip_blacklist import BlacklistDatabase
 # Example: info=Information(['sip', 'sport', 'dport']), and it will be saved in info.data.
 # Access the data format using info.data
 class Information:
-    data=['sip', 'sport', 'dport'] 
-    def __init__(self,set_info):
+    data = ['sip', 'sport', 'dport']
+
+    def __init__(self, set_info):
         self.data = set_info
+
 
 #用于生成一个RuleGenerator实例，表明在哪个数据库中操作，需要传入数据库实例
 #eg： rulegenerator=Rulegenerator(blacklistdatabase)
@@ -20,16 +18,17 @@ class Information:
 class RuleGenerator:
     connection = None
     info = None
+
     def __init__(self, db_name):
         self.db = db_name
-    
+
     #用于设置需要生成的规则字段组合
     #eg： set_info(info.data)
     # Used to set the rule field combinations that need to be generated.
     # Example: set_info(info.data)
-    def set_info(self,information):
+    def set_info(self, information):
         self.info = information
-    
+
     #用于向数据库申请连接
     # Used to request a connection from the database
     def launch(self):
@@ -56,17 +55,16 @@ class RuleGenerator:
         """
         Generates a list of rules based on the specified info.
         """
-        data= self.fetch_data()
+        data = self.fetch_data()
         rules = []
         for row in data:
             rule = ' '.join(str(item) for item in row)
             rules.append(rule)
         return rules
-    
+
     #在rulegenerator完成规则生成后关闭连接
     # Close the connection after rule generation is completed in the RuleGenerator
     def shutdown(self):
         self.conn = None
         self.db.release_connection(self.connection)
         print("Connection closed")
-        

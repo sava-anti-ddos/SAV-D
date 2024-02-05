@@ -1,6 +1,3 @@
-
-
-
 class ReceiveRule:
     """
     A class that represents a rule receiver.

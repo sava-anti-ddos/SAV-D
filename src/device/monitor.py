@@ -3,8 +3,8 @@ import csv
 import queue
 import threading
 import datetime
-from config import Config
-from transport import Transport
+from src.device.device_config import Config
+from src.device.transport_client import Transport
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
 

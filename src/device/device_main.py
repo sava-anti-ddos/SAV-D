@@ -1,10 +1,11 @@
 from monitor import PacketSniffer, PacketInformationUpload
-from transport import Transport
-from config import Config
+from src.device.transport_client import Transport
+from src.device.device_config import Config
 import asyncio
 
 # Create a transport instance for sending data to the controller
 transport = Transport(Config.controller_ip, Config.controller_port)
+
 
 async def periodic_upload(packet_info_upload):
     """

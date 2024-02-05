@@ -2,7 +2,7 @@ import asyncio
 import json
 import struct
 from datetime import datetime
-from config import Config
+from src.device.device_config import Config
 from receive_rule import ReceiveRule
 
 
