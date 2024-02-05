@@ -16,8 +16,10 @@ all:
 # Description: Clean the project by removing all generated files.
 clean:
 	@echo "Cleaning the project..."
-	# remove miniconda3 tmp files
-	rm -rf Miniconda3-py39_23.11.0-2-Linux-x86_64.sh
+# remove miniconda3 tmp files
+	@rm -rf Miniconda3-py39_23.11.0-2-Linux-x86_64.sh
+# remove _pycache_ files
+	@find . -name "__pycache__" -type d -exec rm -rf {} \;
 
 # Target: run
 # Description: Run the project.
