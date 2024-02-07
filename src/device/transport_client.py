@@ -2,19 +2,35 @@ import asyncio
 import json
 import struct
 from datetime import datetime
-from src.device.device_config import Config
+
 from receive_rule import ReceiveRule
+from src.device.config import Config
 
 
 class SAVDProtocol:
-    version = 0.1
+    """
+    Represents a SAVD protocol message.
 
-    def __init__(self, type, payload):
-        self.type = type
+    Attributes:
+        version (float): The version of the protocol.
+        type (str): The type of the message.
+        timestamp (float): The timestamp of the message.
+        payload (str): The payload of the message.
+    """
+
+    def __init__(self, message_type, payload):
+        self.version = 0.1
+        self.type = message_type
         self.timestamp = datetime.now().timestamp()
         self.payload = payload
 
     def serialize(self):
+        """
+        Serializes the SAVDProtocol object into a JSON string.
+
+        Returns:
+            str: The serialized JSON string.
+        """
         return json.dumps(
             {
                 'version': self.version,
@@ -26,11 +42,25 @@ class SAVDProtocol:
 
     @staticmethod
     def deserialize(serialized_data):
-        data = json.loads(serialized_data)
-        if 'type' in data and 'payload' in data:
-            protocol_instance = SAVDProtocol(data['type'], data['payload'])
-            protocol_instance.timestamp = data.get('timestamp',
-                                                   datetime.now().timestamp())
+        """
+        Deserializes a JSON string into a SAVDProtocol object.
+
+        Args:
+            serialized_data (str): The serialized JSON string.
+
+        Returns:
+            SAVDProtocol: The deserialized SAVDProtocol object.
+
+        Raises:
+            ValueError: If the serialized data is missing required fields.
+        """
+        json_data = json.loads(serialized_data)
+        if 'type' in json_data and 'payload' in json_data:
+            protocol_instance = SAVDProtocol(json_data['type'],
+                                             json_data['payload'])
+            protocol_instance.timestamp = json_data.get(
+                'timestamp',
+                datetime.now().timestamp())
             return protocol_instance
         else:
             raise ValueError("Serialized data is missing required fields")
@@ -42,6 +72,13 @@ class Transport:
     """
 
     def __init__(self, ip=None, port=None):
+        """
+            Initializes a TransportClient object.
+
+            Args:
+                ip (str): The IP address of the server. Defaults to None.
+                port (int): The port number of the server. Defaults to None.
+            """
         self.server_ip = ip
         self.server_port = port
         self.heartbeat_interval = Config.heartbeat_interval
@@ -52,6 +89,15 @@ class Transport:
         self.connected = False
 
     async def connect_to_server(self):
+        """
+            Connects to the server using the specified IP address and port.
+
+            Raises:
+                Exception: If the connection fails.
+
+            Returns:
+                None
+            """
         try:
             self.reader, self.writer = await asyncio.open_connection(
                 self.server_ip, self.server_port)
@@ -64,13 +110,40 @@ class Transport:
             await self.connect_to_server()
 
     async def send_heartbeat(self):
+        """
+            Sends a heartbeat message to the server at regular intervals.
+
+            This method is responsible for sending a heartbeat message to the server
+            as long as the client is connected. The heartbeat message helps to keep
+            the connection alive and inform the server that the client is still active.
+
+            The method uses the `send_data` method to send the heartbeat message and
+            prints a confirmation message after sending the heartbeat.
+
+            The interval between heartbeat messages is determined by the `heartbeat_interval`
+            attribute of the transport client.
+
+            """
         while True:
             if self.connected:
                 await self.send_data(0, "heartbeat")
                 print("Heartbeat sent.")
             await asyncio.sleep(self.heartbeat_interval)
 
-    async def dispatch_message(self, message):
+    @staticmethod
+    async def dispatch_message(message):
+        """
+        Dispatches the received message based on its type.
+
+        Args:
+            message: The message to be dispatched.
+
+        Raises:
+            Exception: If there is an error while dispatching the message.
+
+        Returns:
+            None
+        """
         try:
             protocol_instance = SAVDProtocol.deserialize(message)
 
@@ -88,6 +161,15 @@ class Transport:
             print(f"Failed to dispatch message: {e}")
 
     async def listen_for_messages(self):
+        """
+            Listens for incoming messages from the server.
+
+            This method continuously reads data from the reader and decodes it into messages.
+            It then dispatches each message for further processing.
+
+            Raises:
+                asyncio.IncompleteReadError: If the server closes the connection prematurely.
+            """
         try:
             while True:
                 data_length_bytes = await self.reader.readexactly(4)
@@ -103,16 +185,39 @@ class Transport:
             await self.writer.wait_closed()
             await self.connect_to_server()
 
-    async def send_data(self, type, payload):
+    async def send_data(self, message_type, payload):
+        """
+            Sends data to the server.
+
+            Args:
+                message_type (str): The type of the message.
+                payload (str): The payload of the message.
+
+            Returns:
+                None
+            """
         if not self.connected:
             await self.connect_to_server()
-        protocol_instance = SAVDProtocol(type, payload)
+        protocol_instance = SAVDProtocol(message_type, payload)
         serialized_data = protocol_instance.serialize()
         data_length_bytes = struct.pack("!I",
                                         len(serialized_data.encode('utf-8')))
         await self.send(serialized_data, data_length_bytes)
 
     async def send(self, data, data_length_bytes):
+        """
+            Sends the given data to the server.
+
+            Args:
+                data (str): The data to be sent.
+                data_length_bytes (bytes): The length of the data in bytes.
+
+            Raises:
+                ConnectionError: If the connection is closed and reconnection fails.
+
+            Returns:
+                None
+            """
         if self.writer is not None and not self.writer.is_closing():
             self.writer.write(data_length_bytes)
             await self.writer.drain()
@@ -124,6 +229,10 @@ class Transport:
             await self.connect_to_server()
 
     async def start(self):
+        """
+        Starts the transport client by connecting to the server, sending heartbeat,
+        and listening for messages.
+        """
         await self.connect_to_server()
         tasks = [
             asyncio.create_task(self.send_heartbeat()),

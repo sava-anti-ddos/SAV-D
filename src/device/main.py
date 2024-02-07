@@ -1,6 +1,6 @@
 from monitor import PacketSniffer, PacketInformationUpload
 from src.device.transport_client import Transport
-from src.device.device_config import Config
+from src.device.config import Config
 import asyncio
 
 # Create a transport instance for sending data to the controller

@@ -8,6 +8,9 @@ config.read(os.path.join(current_dir, 'config.ini'))
 
 
 class Config:
+    """
+    Configuration class for device settings.
+    """
 
     # Get the controller IP and port from the config file
     controller_ip = config.get('controller', 'controller_ip')

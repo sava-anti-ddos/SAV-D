@@ -3,7 +3,7 @@ import csv
 import queue
 import threading
 import datetime
-from src.device.device_config import Config
+from src.device.config import Config
 from src.device.transport_client import Transport
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
@@ -15,6 +15,19 @@ class DoubleQueue:
     """
 
     def __init__(self):
+        """
+        Initializes the Monitor object.
+
+        The Monitor object is responsible for managing two queues, `queue0` and `queue1`,
+        which are used for storing data. The `current_queue` variable keeps track of the
+        currently active queue.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
         self.queue0 = queue.Queue(maxsize=Config.sniffer_queue_size)
         self.queue1 = queue.Queue(maxsize=Config.sniffer_queue_size)
         self.current_queue = 0
@@ -22,6 +35,9 @@ class DoubleQueue:
     def add_data(self, data):
         """
         Adds data to the current queue and switches queues if the current queue is full.
+
+        Parameters:
+        - data: The data to be added to the queue.
         """
         current_queue = self.queue0 if self.current_queue == 0 else self.queue1
         current_queue.put(data)
@@ -41,6 +57,12 @@ class DoubleQueue:
     def write_data_to_disk(self, queue):
         """
         Writes the data from the queue to a file on disk and moves the file to an upload directory.
+
+        Args:
+            queue (Queue): The queue containing the data to be written to the file.
+
+        Returns:
+            None
         """
         # csv file format to store the queue data
         file_path = os.path.join(Config.sniffer_file_path,
@@ -58,6 +80,12 @@ class DoubleQueue:
     def move_file_to_upload(self, file_path):
         """
         Moves the file to the upload directory.
+
+        Args:
+            file_path (str): The path of the file to be moved.
+
+        Returns:
+            None
         """
         # make a dir to store the file need to upload
         if not os.path.exists(f"{Config.sniffer_file_path}/upload"):
@@ -78,6 +106,15 @@ class PacketSniffer:
     """
 
     def __init__(self, Interface=None):
+        """
+        Initialize the Monitor object.
+
+        Args:
+            Interface (str, optional): The network interface to monitor. If None, all available interfaces will be monitored.
+
+        Returns:
+            None
+        """
         self.packet_sniffer_queue = DoubleQueue()
         if Interface is None:
             self.interfaces = get_if_list()
@@ -87,12 +124,24 @@ class PacketSniffer:
     def sniff_interface(self, interface):
         """
         Sniffs packets on the specified network interface.
+
+        Args:
+            interface (str): The name of the network interface to sniff packets on.
+
+        Returns:
+            None
         """
         sniff(filter="", iface=interface, prn=self.packet_handler)
 
     def packet_handler(self, packet):
         """
         Handles the captured packet and extracts relevant information.
+
+        Args:
+            packet: The captured packet to be processed.
+
+        Returns:
+            None
         """
         src_ip = dst_ip = packet_len = None
         protocol = None
@@ -130,8 +179,11 @@ class PacketSniffer:
 
     def start(self):
         """
-        Starts sniffing on all available network interfaces.
-        """
+            Starts sniffing on all available network interfaces.
+
+            This method creates a separate thread for each network interface
+            and calls the `sniff_interface` method to start sniffing on that interface.
+            """
         threads = []
         for interface in self.interfaces:
             t = threading.Thread(target=self.sniff_interface,
@@ -147,6 +199,13 @@ class PacketInformationUpload:
     """
 
     def __init__(self, ip=None, port=None):
+        """
+            Initializes the Monitor object.
+
+            Args:
+                ip (str, optional): The IP address of the upload server. Defaults to None.
+                port (int, optional): The port number of the upload server. Defaults to None.
+            """
         if ip is None and port is None:
             self.upload_server_ip = '127.0.0.1'
             self.upload_server_port = 13145
@@ -159,8 +218,14 @@ class PacketInformationUpload:
 
     def format_lines_as_csv(self, lines):
         """
-        Utility function to format lines as CSV data.
-        """
+            Utility function to format lines as CSV data.
+
+            Args:
+                lines (list): A list of lines to be formatted as CSV data.
+
+            Returns:
+                str: The formatted CSV data as a string.
+            """
         output = StringIO()
         writer = csv.writer(output)
         for line in lines:
@@ -169,14 +234,28 @@ class PacketInformationUpload:
 
     async def upload_packet_information(self, sniffer_data):
         """
-        Uploads the packet information to the specified server.
-        """
+            Uploads the packet information to the specified server.
+
+            Args:
+                sniffer_data: The packet information to be uploaded.
+
+            Returns:
+                None
+            """
         await self.transport_bus.send_data(1, sniffer_data)
 
     async def get_data_from_local(self):
         """
-        Retrieves data from the local upload directory and uploads it to the server.
-        """
+            Retrieves data from the local upload directory and uploads it to the server.
+
+            This method reads files from the local upload directory, processes them in batches,
+            and uploads the packet information to the server. The files are then moved to the
+            'uploaded' directory.
+
+            Note: This method assumes that the 'upload' and 'uploaded' directories exist in the
+            specified file path.
+
+            """
         file_path = os.path.join(Config.sniffer_file_path, 'upload')
         file_list = os.listdir(file_path)
         # make a dir to store the uploaded file
