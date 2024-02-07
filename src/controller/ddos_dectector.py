@@ -2,6 +2,16 @@ import csv
 
 
 class SAVAPacketSniffer:
+    """
+    Class representing a packet sniffer for SAVA.
+
+    Attributes:
+        None
+
+    Methods:
+        __init__: Initializes the SAVAPacketSniffer object.
+        sniffer_receive: Writes the sniffer data to a CSV file.
+    """
 
     def __init__(self) -> None:
         pass

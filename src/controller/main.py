@@ -1,7 +1,7 @@
 import asyncio
 
-from src.controller.transport_server import TransportServer
-from src.controller.controller_config import Config
+from transport_server import TransportServer
+from config import Config
 from issue_rules import IssueRules
 from ddos_dectector import SAVAPacketSniffer
 
