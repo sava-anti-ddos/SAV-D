@@ -1,3 +1,3 @@
 .. raw:: html
 
-    <meta http-equiv="refresh" content="0; url=https://sava-anti-ddos.github.io/docs/">
+    <meta http-equiv="refresh" content="0; url=https://docs.sava-anti-ddos.org/docs/">
