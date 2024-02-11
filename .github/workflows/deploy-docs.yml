@@ -24,7 +24,7 @@ jobs:
 
     - name: Build Sphinx Documentation
       run: |
-        cd docs  # Assuming your Sphinx source files are in the 'docs' directory
+        cd doc  # Assuming your Sphinx source files are in the 'doc' directory
         make html  # Build your Sphinx documentation into the 'build/html' directory
 
     - name: Deploy to GitHub Pages
