@@ -9,7 +9,7 @@ import sys
 import os
 
 # 为什么是上三层目录呢？ conf.py 这个文件和根目录不就隔着三层目录嘛
-sys.path.insert(0, os.path.abspath('../../src'))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 project = 'SAVA Anti-DDoS'
 copyright = '2024, SAV-D study group'
@@ -19,7 +19,11 @@ release = '0.1'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
+    'sphinx.ext.napoleon',
+]
 
 templates_path = ['_templates']
 exclude_patterns = []
