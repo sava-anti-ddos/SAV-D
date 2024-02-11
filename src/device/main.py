@@ -1,5 +1,5 @@
 from monitor import PacketSniffer, PacketInformationUpload
-from src.device.transport_client import Transport
+from src.device.device import Transport
 from src.device.config import Config
 import asyncio
 

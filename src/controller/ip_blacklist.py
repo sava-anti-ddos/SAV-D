@@ -6,8 +6,8 @@ import csv
 import os
 import shutil
 import glob
-
 from config import Config
+
 
 class BlacklistDatabase:
     """

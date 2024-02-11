@@ -4,7 +4,7 @@ import queue
 import threading
 import datetime
 from src.device.config import Config
-from src.device.transport_client import Transport
+from src.device.device import Transport
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
 

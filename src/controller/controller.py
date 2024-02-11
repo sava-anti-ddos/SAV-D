@@ -3,7 +3,7 @@ import struct
 import json
 from datetime import datetime, timedelta
 from config import Config
-from ddos_dectector import SAVAPacketSniffer
+from src.controller.ddos_attack_detection import SAVAPacketSniffer
 
 
 class SAVDProtocol:
@@ -88,7 +88,7 @@ class TransportServer:
     """
 
     def __init__(self, ip, port):
-            """
+        """
             Initializes a TransportServer object.
 
             Args:
@@ -102,14 +102,14 @@ class TransportServer:
                 trust_clients_lock (asyncio.Lock): A lock to synchronize access to the trust_clients dictionary.
                 heartbeat_timeout (timedelta): The timeout duration for heartbeat messages.
             """
-            self.listen_ip = ip
-            self.listen_port = port
-            self.trust_clients = {}
-            self.trust_clients_lock = asyncio.Lock()
-            self.heartbeat_timeout = timedelta(seconds=300)
+        self.listen_ip = ip
+        self.listen_port = port
+        self.trust_clients = {}
+        self.trust_clients_lock = asyncio.Lock()
+        self.heartbeat_timeout = timedelta(seconds=300)
 
     async def cleanup_clients(self):
-            """
+        """
             Cleans up disconnected clients based on heartbeat timeout.
 
             This method iterates over the trust_clients dictionary and checks the last heartbeat time of each client.
@@ -118,18 +118,18 @@ class TransportServer:
 
             Note: This method is intended to be run as a background task using asyncio.
             """
-            while True:
-                async with self.trust_clients_lock:
-                    current_time = datetime.now()
-                    disconnected_clients = []
-                    for client, client_info in self.trust_clients.items():
-                        if current_time - client_info[
-                                "last_heartbeat"] > self.heartbeat_timeout:
-                            print(f"Client {client} timed out")
-                            disconnected_clients.append(client)
-                    for client in disconnected_clients:
-                        del self.trust_clients[client]
-                await asyncio.sleep(self.heartbeat_timeout.total_seconds())
+        while True:
+            async with self.trust_clients_lock:
+                current_time = datetime.now()
+                disconnected_clients = []
+                for client, client_info in self.trust_clients.items():
+                    if current_time - client_info[
+                            "last_heartbeat"] > self.heartbeat_timeout:
+                        print(f"Client {client} timed out")
+                        disconnected_clients.append(client)
+                for client in disconnected_clients:
+                    del self.trust_clients[client]
+            await asyncio.sleep(self.heartbeat_timeout.total_seconds())
 
     async def send_control_message(self, payload):
         """

@@ -1,4 +1,6 @@
 import csv
+import os
+from config import Config
 
 
 class SAVAPacketSniffer:
@@ -13,8 +15,9 @@ class SAVAPacketSniffer:
         sniffer_receive: Writes the sniffer data to a CSV file.
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self):
+        self.sniffer_file_name = Config.name
+        self.sinffer_read_path = Config.readinfo_path
 
     def sniffer_receive(self, sniffer_data):
         """
@@ -23,7 +26,15 @@ class SAVAPacketSniffer:
         Args:
             sniffer_data (list): List of rows to be written to the CSV file.
         """
-        with open("sniffer.csv", "a", newline='') as file:
+        store_file = os.path.join(self.sinffer_read_path,
+                                  self.sniffer_file_name)
+        with open(store_file, "a", newline='') as file:
             csv_writer = csv.writer(file)
             for row in sniffer_data:
                 csv_writer.writerow(row)
+
+
+class DDoS:
+
+    def __init__(self) -> None:
+        pass

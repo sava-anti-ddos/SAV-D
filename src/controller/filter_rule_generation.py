@@ -1,4 +1,3 @@
-
 class Information:
     """
     This class represents information data.

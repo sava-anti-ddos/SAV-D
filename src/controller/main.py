@@ -1,9 +1,8 @@
 import asyncio
 
-from transport_server import TransportServer
+from src.controller.controller import TransportServer
 from config import Config
-from issue_rules import IssueRules
-from ddos_dectector import SAVAPacketSniffer
+from src.controller.rule_issuance import IssueRules
 
 # Create a server instance and all the devices will connect to this
 server = TransportServer(Config.controller_ip, Config.controller_port)
@@ -31,7 +30,7 @@ async def issue_rules_main(rules):
 
 async def main():
     test_rules = [["127.0.0.1", 3306], ["127.0.0.1", 3307], ["127.0.0.1", 3308]]
-    # 使用 asyncio.gather 来并发运行两个协程
+    # asyncio.gather run two task
     server_task = asyncio.create_task(transport_server())
     rules_task = asyncio.create_task(issue_rules_main(test_rules))
     await asyncio.gather(

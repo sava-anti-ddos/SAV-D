@@ -1,6 +1,3 @@
-import asyncio
-
-
 class IssueRules:
 
     def __init__(self, transport=None):
