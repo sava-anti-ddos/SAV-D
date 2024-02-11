@@ -1,0 +1,39 @@
+name: Build and Deploy Sphinx Documentation
+
+on:
+  push:
+    branches:
+      - main  # Assuming your main branch is named 'main'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out source code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'  # Set the Python version
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install sphinx sphinx-rtd-theme  # Install Sphinx and any themes or extensions you use
+
+    - name: Build Sphinx Documentation
+      run: |
+        cd docs  # Assuming your Sphinx source files are in the 'docs' directory
+        make html  # Build your Sphinx documentation into the 'build/html' directory
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.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 }}  # Use your PAT for authentication
+        publish_dir: ./doc/build/html  # The directory where your built docs are located
+        publish_branch: gh-pages  # The branch of the GitHub Pages repository to push to
+        repository_name: sava-anti-ddos/docs  # Specify your GitHub Pages repository in the format 'username/repo'
+        user_name: 'shatanyumi'
+        user_email: '1143005768@qq.com'
+        commit_message: 'Deploy Sphinx Documentation [skip ci]'  # Optional: customize the commit message
