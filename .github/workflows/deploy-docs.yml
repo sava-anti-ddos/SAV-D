@@ -3,7 +3,7 @@ name: Build and Deploy Sphinx Documentation
 on:
   push:
     branches:
-      - main  # Assuming your main branch is named 'main'
+      - master  # Assuming your main branch is named 'main'
 
 jobs:
   build-and-deploy:
@@ -30,10 +30,10 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.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 }}  # Use your PAT for authentication
+        github_token: ${{ secrets.GITHUB_TOKEN }}  # Use your PAT for authentication
         publish_dir: ./doc/build/html  # The directory where your built docs are located
         publish_branch: gh-pages  # The branch of the GitHub Pages repository to push to
-        repository_name: sava-anti-ddos/docs  # Specify your GitHub Pages repository in the format 'username/repo'
+        external_repository: 'sava-anti-ddos/docs'  # Specify your GitHub Pages repository in the format 'username/repo'
         user_name: 'shatanyumi'
         user_email: '1143005768@qq.com'
         commit_message: 'Deploy Sphinx Documentation [skip ci]'  # Optional: customize the commit message
