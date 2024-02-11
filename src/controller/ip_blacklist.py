@@ -7,59 +7,7 @@ import os
 import shutil
 import glob
 
-
-class DB_Info:
-    """
-    Used to specify the path of the database file, a parameter that needs to be passed during instantiation
-    db=DB_Info('blacklist.db')
-    """
-    path = ""
-
-    def __init__(self, db_path):
-        """
-        db=DB_Info('blacklist.db')
-        """
-        self.path = db_path
-
-
-class Read_Info:
-    """
-    Used to specify the path of the folder that needs to be read, a parameter that needs to be passed during instantiation
-    """
-    path = ""
-
-    def __init__(self, read_path):
-        """
-        read_path=Read_Info('tmp/sniffer/')
-        """
-        self.path = read_path
-
-
-class Write_Info:
-    """
-    Used to specify the path of the folder where the read files will be stored, a parameter that needs to be passed during instantiation
-    """
-    path = ""
-
-    def __init__(self, write_path):
-        """
-        write_path=Read_Info('tmp/sniffer_finish/')
-        """
-        self.path = write_path
-
-
-class Encoding:
-    """
-    Used to specify the encoding type of the CSV file, a parameter that needs to be passed during instantiation
-    """
-    type = ""
-
-    def __init__(self, encodingtype):
-        """
-        encodingtype=Encoding('utf-8-sig')
-        """
-        self.type = encodingtype
-
+from config import Config
 
 class BlacklistDatabase:
     """
@@ -490,7 +438,7 @@ class CSVHandler:
         self.csv_dir = readpath
         self.target_dir = writepath
         self.encoding = encodetype
-        if not os.path.exists(Write_Info.path):
+        if not os.path.exists(Config.writeinfo_path):
             print("path error")
             return
 
