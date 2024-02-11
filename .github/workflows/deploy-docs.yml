@@ -30,7 +30,7 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}  # Use your PAT for authentication
+        personal_token: ${{ secrets.PERSONAL_TOKEN }}  # Use your PAT for authentication
         publish_dir: ./doc/build/html  # The directory where your built docs are located
         publish_branch: gh-pages  # The branch of the GitHub Pages repository to push to
         external_repository: 'sava-anti-ddos/docs'  # Specify your GitHub Pages repository in the format 'username/repo'
