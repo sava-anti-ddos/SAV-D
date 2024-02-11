@@ -8,7 +8,6 @@
 import sys
 import os
 
-# 为什么是上三层目录呢？ conf.py 这个文件和根目录不就隔着三层目录嘛
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 project = 'SAVA Anti-DDoS'
@@ -27,6 +26,8 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
+
+master_doc = 'index_redirect'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
