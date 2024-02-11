@@ -34,6 +34,6 @@ jobs:
         publish_dir: ./doc/build/html  # The directory where your built docs are located
         publish_branch: gh-pages  # The branch of the GitHub Pages repository to push to
         external_repository: 'sava-anti-ddos/docs'  # Specify your GitHub Pages repository in the format 'username/repo'
-        user_name: 'shatanyumi'
-        user_email: '1143005768@qq.com'
+        user_name: 'shatanyumi' # Optional: customize the commit user name
+        user_email: '1143005768@qq.com' # Optional: customize the commit user email
         commit_message: 'Deploy Sphinx Documentation [skip ci]'  # Optional: customize the commit message
