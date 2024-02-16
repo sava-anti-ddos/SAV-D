@@ -1,3 +1,6 @@
+from filter_rule import FilterRule
+
+
 class ReceiveRule:
     """
     A class that represents a rule receiver.
@@ -23,6 +26,9 @@ class ReceiveRule:
             # make sure that data is a list
             if isinstance(data, list):
                 self.rules = data
+                # apply the rule
+                fr = FilterRule()
+                await fr.apply_rule(self.rules)
                 print(f"Received rules: {self.rules}")
             else:
                 raise ValueError("Invalid rule data")

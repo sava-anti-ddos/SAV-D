@@ -18,6 +18,13 @@ class IPTableHelper:
         rule = ChainRule(match=match_dst_ip, target=Targets.DROP)
         self.input_chain.append_rule(rule)
 
+    def block_src_dst_ip(self, src_ip, dst_ip):
+        match_src_ip = PacketMatch().source_address().equals(src_ip)
+        match_dst_ip = PacketMatch().dest_address().equals(dst_ip)
+        rule = ChainRule(match_list=[match_src_ip, match_dst_ip],
+                         target=Targets.DROP)
+        self.input_chain.append_rule(rule)
+
     def block_tcp_packet(self,
                          src_port=None,
                          dst_port=None,

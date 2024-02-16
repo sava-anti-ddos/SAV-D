@@ -27,3 +27,7 @@ class Config:
     # Get the receive rule configuration from the config file
     heartbeat_interval = config.getint('connection', 'heartbeat_interval')
     reconnect_interval = config.getint('connection', 'reconnect_interval')
+
+    # Get the rule cache
+    cache_path = config.get('rule', 'cache_path')
+    cache_max_size = config.getint('rule', 'cache_max_size')
