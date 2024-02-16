@@ -3,7 +3,7 @@ import struct
 import json
 from datetime import datetime, timedelta
 from config import Config
-from src.controller.ddos_attack_detection import SAVAPacketSniffer
+from ddos_attack_detection import SAVAPacketSniffer
 
 
 class SAVDProtocol:
@@ -139,13 +139,13 @@ class TransportServer:
             payload (str): The payload of the control message.
         """
         try:
-            message = SAVDProtocol(2, payload).serialize()
+            # message = SAVDProtocol(2, payload).serialize()
             for client, client_info in self.trust_clients.items():
                 writer = client_info["writer"]
                 if writer.is_closing():
                     continue
                 print(f"Sending control message to {client}")
-                await self.respones_to_client(client, writer, message)
+                await self.respones_to_client(client, writer, payload, 2)
         except Exception as e:
             print(f"Failed to send control message: {e}")
 
@@ -201,7 +201,7 @@ class TransportServer:
 
                 print(f"Sending heartbeat response to {client}")
                 await self.respones_to_client(client, server[1],
-                                              "heartbeat received")
+                                              "heartbeat received", 0)
             elif protocol_instance.type == 1:
                 print("Received sniffer data")
                 # Ensure payload is a list before passing to sniffer_receive
@@ -210,7 +210,7 @@ class TransportServer:
                     sniffer.sniffer_receive(protocol_instance.payload)
                 # Send response to client
                 await self.respones_to_client(client, server[1],
-                                              "sniffer data received")
+                                              "sniffer data received", 1)
             elif protocol_instance.type == 2:
                 print("Received control message")
             else:
@@ -218,7 +218,7 @@ class TransportServer:
         except Exception as e:
             print(f"Error in dispatch_message: {e}")
 
-    async def respones_to_client(self, client, writer, message):
+    async def respones_to_client(self, client, writer, message, message_type=3):
         """
         Sends a response message to a client.
 
@@ -228,7 +228,7 @@ class TransportServer:
             message (str): The response message.
         """
         try:
-            respones = SAVDProtocol(3, message).serialize()
+            respones = SAVDProtocol(message_type, message).serialize()
             writer.write(struct.pack("!I", len(respones.encode('utf-8'))))
             await writer.drain()
             writer.write(respones.encode('utf-8'))

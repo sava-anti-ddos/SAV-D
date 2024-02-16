@@ -3,8 +3,8 @@ import json
 import struct
 from datetime import datetime
 
-from src.device.rule_receive import ReceiveRule
-from src.device.config import Config
+from rule_receive import ReceiveRule
+from config import Config
 
 
 class SAVDProtocol:
@@ -148,9 +148,9 @@ class Transport:
             protocol_instance = SAVDProtocol.deserialize(message)
 
             if protocol_instance.type == 0:
-                print("Received heartbeat")
+                print("Received heartbeat response")
             elif protocol_instance.type == 1:
-                print("Received sniffer data")
+                print("Received sniffer data response")
             elif protocol_instance.type == 2:
                 print("Received control message")
                 rule_receiver = ReceiveRule()

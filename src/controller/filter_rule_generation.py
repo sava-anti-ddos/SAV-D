@@ -17,9 +17,6 @@ class RuleGenerator:
     A class that generates rules based on specified information from a database.
     """
 
-    connection = None
-    info = None
-
     def __init__(self, db_name):
         """
         Initialize the RuleGenerator object.
@@ -31,6 +28,9 @@ class RuleGenerator:
             None
         """
         self.db = db_name
+
+        self.connection = None
+        self.info = None
 
     def set_info(self, information):
         """

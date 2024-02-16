@@ -1,6 +1,6 @@
 from monitor import PacketSniffer, PacketInformationUpload
-from src.device.device import Transport
-from src.device.config import Config
+from device import Transport
+from config import Config
 import asyncio
 
 # Create a transport instance for sending data to the controller
@@ -30,17 +30,17 @@ async def periodic_upload_main():
         None
     """
     # Create a packet information upload instance
-    upload = PacketInformationUpload()
+    upload = PacketInformationUpload(transport)
     await periodic_upload(upload)
 
 
 if __name__ == "__main__":
     # # Create a packet sniffer instance
-    # sniffer = PacketSniffer(Config.sniffer_interface)
-    # sniffer.start()
-
-    # # Start the periodic upload
-    # asyncio.run(periodic_upload_main())
+    sniffer = PacketSniffer(Config.sniffer_interface)
+    sniffer.start()
 
     # Start the connection to controller
     asyncio.run(transport.start())
+
+    # # Start the periodic upload
+    asyncio.run(periodic_upload_main())

@@ -3,8 +3,8 @@ import csv
 import queue
 import threading
 import datetime
-from src.device.config import Config
-from src.device.device import Transport
+from config import Config
+from device import Transport
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
 
@@ -71,7 +71,7 @@ class DoubleQueue:
             writer = csv.writer(f)
             while not queue.empty():
                 data = queue.get()
-                print(f"Writing data to file: {data}")
+                # print(f"Writing data to file: {data}")
                 writer.writerow(data)
 
         # move the file to the upload dir
@@ -198,7 +198,7 @@ class PacketInformationUpload:
     A class that handles the upload of packet information.
     """
 
-    def __init__(self, ip=None, port=None):
+    def __init__(self, ip=None, port=None, transport=None):
         """
             Initializes the Monitor object.
 
@@ -213,8 +213,11 @@ class PacketInformationUpload:
             self.upload_server_ip = ip
             self.upload_server_port = port
 
-        self.transport_bus = Transport(self.upload_server_ip,
-                                       self.upload_server_port)
+        if transport is not None:
+            self.transport_bus = transport
+        else:  
+            self.transport_bus = Transport(self.upload_server_ip, self.upload_server_port)
+
 
     def format_lines_as_csv(self, lines):
         """
