@@ -7,6 +7,9 @@ from config import Config
 from device import Transport
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 class DoubleQueue:
@@ -39,6 +42,7 @@ class DoubleQueue:
         Parameters:
         - data: The data to be added to the queue.
         """
+        logger.info(f"Adding data to the queue: {data}")
         current_queue = self.queue0 if self.current_queue == 0 else self.queue1
         current_queue.put(data)
 
@@ -49,6 +53,7 @@ class DoubleQueue:
         """
         Switches the current queue and writes the data from the inactive queue to disk.
         """
+        logger.info("Switching queues and writing data to disk")
         inactive_queue = self.queue0 if self.current_queue == 0 else self.queue1
         self.current_queue ^= 1
 
@@ -64,14 +69,16 @@ class DoubleQueue:
         Returns:
             None
         """
+        logger.info("Writing data to disk")
         # csv file format to store the queue data
+        logger.info("file path: " + Config.sniffer_file_path)
         file_path = os.path.join(Config.sniffer_file_path,
                                  Config.sniffer_file_name)
         with open(file_path, 'a') as f:
             writer = csv.writer(f)
             while not queue.empty():
                 data = queue.get()
-                # print(f"Writing data to file: {data}")
+                logger.debug(f"Writing data to file: {data}")
                 writer.writerow(data)
 
         # move the file to the upload dir
@@ -87,17 +94,24 @@ class DoubleQueue:
         Returns:
             None
         """
+        logger.info("Moving file to upload directory")
         # make a dir to store the file need to upload
         if not os.path.exists(f"{Config.sniffer_file_path}/upload"):
             os.makedirs(f"{Config.sniffer_file_path}/upload")
 
+        logger.info("Renaming file by time and moving to upload directory")
         # rename the file by time
         now = datetime.datetime.now()
         current_time = now.strftime("%Y-%m-%d_%H-%M-%S")
         # move the file to the upload dir
+        logger.info(
+            "file rename to: " +
+            f"{Config.sniffer_file_path}/upload/sniffer-{current_time}.csv")
         os.rename(
             file_path,
             f"{Config.sniffer_file_path}/upload/sniffer-{current_time}.csv")
+
+        logger.info("File moved to upload directory")
 
 
 class PacketSniffer:
@@ -131,6 +145,7 @@ class PacketSniffer:
         Returns:
             None
         """
+        logger.info(f"Sniffing on interface: {interface}")
         sniff(filter="", iface=interface, prn=self.packet_handler)
 
     def packet_handler(self, packet):
@@ -143,6 +158,8 @@ class PacketSniffer:
         Returns:
             None
         """
+        logger.info(f"Handling packet: {packet}")
+
         src_ip = dst_ip = packet_len = None
         protocol = None
         src_port = dst_port = flags = None
@@ -158,7 +175,7 @@ class PacketSniffer:
             dst_port = packet[TCP].dport
             flags = packet[TCP].flags
             # Convert the flags integer to a string representation of the flags list
-            flags_str = packet.sprintf("%TCP.flags%")
+            # flags_str = packet.sprintf("%TCP.flags%")
         elif UDP in packet:
             protocol = "UDP"
             src_port = packet[UDP].sport
@@ -170,8 +187,11 @@ class PacketSniffer:
 
         timestamp = packet.time
 
+        logger.debug(
+            f"Packet info: {src_ip}, {dst_ip}, {src_port}, {dst_port}, {protocol}, {flags}, {timestamp}, {packet_len}"
+        )
         packet_info = [
-            src_ip, dst_ip, src_port, dst_port, protocol, flags_str, timestamp,
+            src_ip, dst_ip, src_port, dst_port, protocol, flags, timestamp,
             packet_len
         ]
 
@@ -184,6 +204,7 @@ class PacketSniffer:
             This method creates a separate thread for each network interface
             and calls the `sniff_interface` method to start sniffing on that interface.
             """
+        logger.info("Starting packet sniffer")
         threads = []
         for interface in self.interfaces:
             t = threading.Thread(target=self.sniff_interface,
@@ -215,9 +236,9 @@ class PacketInformationUpload:
 
         if transport is not None:
             self.transport_bus = transport
-        else:  
-            self.transport_bus = Transport(self.upload_server_ip, self.upload_server_port)
-
+        else:
+            self.transport_bus = Transport(self.upload_server_ip,
+                                           self.upload_server_port)
 
     def format_lines_as_csv(self, lines):
         """
@@ -229,6 +250,7 @@ class PacketInformationUpload:
             Returns:
                 str: The formatted CSV data as a string.
             """
+        logger.info(f"Formatting lines as CSV: {lines}")
         output = StringIO()
         writer = csv.writer(output)
         for line in lines:
@@ -245,6 +267,7 @@ class PacketInformationUpload:
             Returns:
                 None
             """
+        logger.info(f"Uploading packet information: {sniffer_data}")
         await self.transport_bus.send_data(1, sniffer_data)
 
     async def get_data_from_local(self):
@@ -259,8 +282,10 @@ class PacketInformationUpload:
             specified file path.
 
             """
+        logger.info("Getting data from local")
         file_path = os.path.join(Config.sniffer_file_path, 'upload')
         file_list = os.listdir(file_path)
+        logger.info(f"File list: {file_list}")
         # make a dir to store the uploaded file
         if not os.path.exists(f"{Config.sniffer_file_path}/uploaded"):
             os.makedirs(f"{Config.sniffer_file_path}/uploaded")
@@ -275,13 +300,13 @@ class PacketInformationUpload:
                 for line in csv_reader:
                     lines_buffer.append(line)
                     if len(lines_buffer) == BUFFER_SIZE:
-                        print(lines_buffer)
                         await self.upload_packet_information(lines_buffer)
                         lines_buffer = []
 
                 if len(lines_buffer) > 0:
-                    print(lines_buffer)
                     await self.upload_packet_information(lines_buffer)
-
+            logger.info(f"Uploaded file: {file}")
+            logger.info(
+                f"Fule rename to {Config.sniffer_file_path}/uploaded/{file}")
             os.rename(f"{file_path}/{file}",
                       f"{Config.sniffer_file_path}/uploaded/{file}")

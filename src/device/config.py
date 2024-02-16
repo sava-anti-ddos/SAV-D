@@ -31,3 +31,6 @@ class Config:
     # Get the rule cache
     cache_path = config.get('rule', 'cache_path')
     cache_max_size = config.getint('rule', 'cache_max_size')
+
+    # Get log path
+    log_path = config.get('log', 'log_path')

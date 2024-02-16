@@ -5,6 +5,9 @@ from datetime import datetime
 
 from rule_receive import ReceiveRule
 from config import Config
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 class SAVDProtocol:
@@ -102,10 +105,12 @@ class Transport:
             self.reader, self.writer = await asyncio.open_connection(
                 self.server_ip, self.server_port)
             self.connected = True
-            print(f"Connected to server at {self.server_ip}:{self.server_port}")
+            logger.info(
+                f"Connected to controller at {self.server_ip}:{self.server_port}"
+            )
         except Exception as e:
             self.connected = False
-            print(f"Connection failed: {e}. Reconnecting...")
+            logger.error(f"Connection failed: {e}. Reconnecting...")
             await asyncio.sleep(self.reconnect_interval)
             await self.connect_to_server()
 
@@ -127,7 +132,7 @@ class Transport:
         while True:
             if self.connected:
                 await self.send_data(0, "heartbeat")
-                print("Heartbeat sent.")
+                logger.info(f"Heartbeat sent.")
             await asyncio.sleep(self.heartbeat_interval)
 
     @staticmethod
@@ -144,21 +149,22 @@ class Transport:
         Returns:
             None
         """
+        logger.info(f"Dispatching message: {message}")
         try:
             protocol_instance = SAVDProtocol.deserialize(message)
-
             if protocol_instance.type == 0:
-                print("Received heartbeat response")
+                logger.info("Received heartbeat response")
             elif protocol_instance.type == 1:
-                print("Received sniffer data response")
+                logger.info("Received sniffer data response")
             elif protocol_instance.type == 2:
-                print("Received control message")
+                logger.info("Received control response")
                 rule_receiver = ReceiveRule()
                 await rule_receiver.receive_rule(protocol_instance.payload)
             elif protocol_instance.type == 3:
-                print(f"Received response message: {protocol_instance.payload}")
+                logger.info(
+                    f"Received response message: {protocol_instance.payload}")
         except Exception as e:
-            print(f"Failed to dispatch message: {e}")
+            logger.error(f"Failed to dispatch message: {e}")
 
     async def listen_for_messages(self):
         """
@@ -170,16 +176,17 @@ class Transport:
             Raises:
                 asyncio.IncompleteReadError: If the server closes the connection prematurely.
             """
+        logger.info("Listening for messages from the controller.")
         try:
             while True:
                 data_length_bytes = await self.reader.readexactly(4)
                 data_length = struct.unpack("!I", data_length_bytes)[0]
                 data = await self.reader.readexactly(data_length)
                 message = data.decode('utf-8')
-                print(f"Received message: {message}")
+                logger.info(f"Received message: {message}")
                 await self.dispatch_message(message)
         except asyncio.IncompleteReadError:
-            print("Server closed the connection.")
+            logger.error("Controller closed the connection")
             self.connected = False
             self.writer.close()
             await self.writer.wait_closed()
@@ -196,6 +203,7 @@ class Transport:
             Returns:
                 None
             """
+        logger.info(f"Sending data to the controller: {payload}")
         if not self.connected:
             await self.connect_to_server()
         protocol_instance = SAVDProtocol(message_type, payload)
@@ -218,14 +226,15 @@ class Transport:
             Returns:
                 None
             """
+        logger.info(f"send data: {data}")
         if self.writer is not None and not self.writer.is_closing():
             self.writer.write(data_length_bytes)
             await self.writer.drain()
             self.writer.write(data.encode('utf-8'))
             await self.writer.drain()
-            print("Data sent to the server.")
+            logger.info(f"Data sent: {data}")
         else:
-            print("Connection is closed. Attempting to reconnect...")
+            logger.info("Connection is closed. Attempting to reconnect...")
             await self.connect_to_server()
 
     async def start(self):
@@ -233,9 +242,11 @@ class Transport:
         Starts the transport client by connecting to the server, sending heartbeat,
         and listening for messages.
         """
+        logger.info("Starting device transport client")
         await self.connect_to_server()
         tasks = [
             asyncio.create_task(self.send_heartbeat()),
             asyncio.create_task(self.listen_for_messages()),
         ]
+        logger.info("Tasks created. Starting event loop.")
         await asyncio.gather(*tasks)

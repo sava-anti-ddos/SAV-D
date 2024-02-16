@@ -1,4 +1,7 @@
 from acl_helper import IPTableHelper
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 class FilterRule:
@@ -16,6 +19,7 @@ class FilterRule:
         Returns:
             None
         """
+        logger.info('Applying rule to the local firewall')
         ipt = IPTableHelper()
         for line in rules:
             ipt.block_src_dst_ip(line[0], line[1])

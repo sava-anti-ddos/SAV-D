@@ -1,4 +1,7 @@
 from filter_rule import FilterRule
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 class ReceiveRule:
@@ -22,15 +25,16 @@ class ReceiveRule:
         Returns:
             None
         """
+        logger.info('Receiving rule from the controller')
         try:
             # make sure that data is a list
             if isinstance(data, list):
                 self.rules = data
                 # apply the rule
+                logger.info('Applying rule to the filter rule module')
                 fr = FilterRule()
                 await fr.apply_rule(self.rules)
-                print(f"Received rules: {self.rules}")
             else:
                 raise ValueError("Invalid rule data")
         except Exception as e:
-            print(f"Error receiving rule: {e}")
+            logger.error(f"Error receiving rule: {e}")
