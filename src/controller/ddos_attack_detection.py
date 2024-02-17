@@ -1,6 +1,9 @@
 import csv
 import os
 from config import Config
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 class SAVAPacketSniffer:
@@ -26,12 +29,15 @@ class SAVAPacketSniffer:
         Args:
             sniffer_data (list): List of rows to be written to the CSV file.
         """
+        logger.info("Writing sniffer data to file")
         store_file = os.path.join(self.sinffer_read_path,
                                   self.sniffer_file_name)
         with open(store_file, "a", newline='') as file:
             csv_writer = csv.writer(file)
             for row in sniffer_data:
                 csv_writer.writerow(row)
+
+        logger.info(f"Store to file: " + store_file)
 
 
 class DDoS:

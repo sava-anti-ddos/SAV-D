@@ -1,3 +1,8 @@
+from log import get_logger
+
+logger = get_logger(__name__)
+
+
 class IssueRules:
 
     def __init__(self, transport=None):
@@ -19,8 +24,8 @@ class IssueRules:
         Raises:
             Exception: If an error occurs while sending the rules.
         """
+        logger.info(f"Sending rules: {data}")
         try:
-            print(f"Sending rules: {data}")
             # check data whether it is a list of rules
             if isinstance(data, list):
                 # make a buffer to store a part of the data
@@ -40,4 +45,4 @@ class IssueRules:
                     # send the buffer to the transport server
                     await self.transport.send_control_message(buffer)
         except Exception as e:
-            print(f"Error in send_rules: {e}")
+            logger.error(f"Error sending rules: {e}")

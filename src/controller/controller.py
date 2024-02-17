@@ -4,6 +4,9 @@ import json
 from datetime import datetime, timedelta
 from config import Config
 from ddos_attack_detection import SAVAPacketSniffer
+from log import get_logger
+
+logger = get_logger(__name__)
 
 
 class SAVDProtocol:
@@ -118,6 +121,7 @@ class TransportServer:
 
             Note: This method is intended to be run as a background task using asyncio.
             """
+        logger.info("Starting cleanup_clients")
         while True:
             async with self.trust_clients_lock:
                 current_time = datetime.now()
@@ -125,8 +129,9 @@ class TransportServer:
                 for client, client_info in self.trust_clients.items():
                     if current_time - client_info[
                             "last_heartbeat"] > self.heartbeat_timeout:
-                        print(f"Client {client} timed out")
+                        logger.info(f"Client {client} disconnected")
                         disconnected_clients.append(client)
+                logger.info(f"Disconnected clients: {disconnected_clients}")
                 for client in disconnected_clients:
                     del self.trust_clients[client]
             await asyncio.sleep(self.heartbeat_timeout.total_seconds())
@@ -139,15 +144,14 @@ class TransportServer:
             payload (str): The payload of the control message.
         """
         try:
-            # message = SAVDProtocol(2, payload).serialize()
             for client, client_info in self.trust_clients.items():
                 writer = client_info["writer"]
                 if writer.is_closing():
                     continue
-                print(f"Sending control message to {client}")
+                logger.info(f"Sending control message to {client}")
                 await self.respones_to_client(client, writer, payload, 2)
         except Exception as e:
-            print(f"Failed to send control message: {e}")
+            logger.error(f"Failed to send control message: {e}")
 
     async def handle_client(self, reader, writer):
         """
@@ -157,8 +161,10 @@ class TransportServer:
             reader (asyncio.StreamReader): The reader object for reading data from the client.
             writer (asyncio.StreamWriter): The writer object for writing data to the client.
         """
+        logger.info("New client connected")
         addr = writer.get_extra_info('peername')
         client_ip, client_port = addr[0], addr[1]
+        logger.info(f"Client {client_ip}:{client_port} connected")
         client = (client_ip, client_port)
         server = (reader, writer)
         try:
@@ -167,13 +173,14 @@ class TransportServer:
                 length = struct.unpack("!I", data_length_bytes)[0]
                 data = await reader.readexactly(length)
                 message = data.decode('utf-8')
-                print(f"Received from {addr}: {message}")
+                logger.debug(f"Received from {addr}: {message}")
                 await self.dispatch_message(client, server, message)
         except (asyncio.IncompleteReadError, ConnectionResetError):
-            print(f"Client {client} disconnected")
+            logger.info(f"Client {client} disconnected")
             writer.close()
             await writer.wait_closed()
 
+    @staticmethod
     async def dispatch_message(self, client, server, message):
         """
         Dispatches a message to the appropriate handler based on the protocol type.
@@ -183,11 +190,12 @@ class TransportServer:
             server (tuple): The reader and writer objects representing the server.
             message (str): The received message.
         """
+        logger.info(f"Dispatching message from {client}: {message}")
         try:
             protocol_instance = SAVDProtocol.deserialize(message)
 
             if protocol_instance.type == 0:
-                print("Received heartbeat")
+                logger.info(f"Received heartbeat from {client}")
                 async with self.trust_clients_lock:
                     if client not in self.trust_clients:
                         self.trust_clients[client] = {
@@ -198,12 +206,13 @@ class TransportServer:
                         self.trust_clients[client][
                             "last_heartbeat"] = datetime.now()
                         self.trust_clients[client]["writer"] = server[1]
+                logger.info(f"Client {client} added to trust_clients")
 
-                print(f"Sending heartbeat response to {client}")
+                logger.info(f"Sending heartbeat response to {client}")
                 await self.respones_to_client(client, server[1],
                                               "heartbeat received", 0)
             elif protocol_instance.type == 1:
-                print("Received sniffer data")
+                logger.info(f"Received sniffer data from {client}")
                 # Ensure payload is a list before passing to sniffer_receive
                 if isinstance(protocol_instance.payload, list):
                     sniffer = SAVAPacketSniffer()
@@ -212,11 +221,11 @@ class TransportServer:
                 await self.respones_to_client(client, server[1],
                                               "sniffer data received", 1)
             elif protocol_instance.type == 2:
-                print("Received control message")
+                logger.info(f"Received control message from {client}")
             else:
-                print("Received unknown message")
+                logger.warning(f"Unknown message type from {client}")
         except Exception as e:
-            print(f"Error in dispatch_message: {e}")
+            logger.error(f"Failed to dispatch message from {client}: {e}")
 
     async def respones_to_client(self, client, writer, message, message_type=3):
         """
@@ -227,24 +236,27 @@ class TransportServer:
             writer (asyncio.StreamWriter): The writer object for writing data to the client.
             message (str): The response message.
         """
+        logger.info(f"Sending response message to {client}: {message}")
         try:
             respones = SAVDProtocol(message_type, message).serialize()
             writer.write(struct.pack("!I", len(respones.encode('utf-8'))))
             await writer.drain()
             writer.write(respones.encode('utf-8'))
             await writer.drain()
-            print(f"response message {respones} sent to {client}")
+            logger.info(f"Response message sent to {client}")
         except Exception as e:
-            print(f"Failed to send response message to {client}: {e}")
+            logger.error(f"Failed to send response message to {client}: {e}")
 
     async def start_server(self):
         """
         Starts the transport server and listens for client connections.
         """
+        logger.info(f"Starting server on {self.listen_ip}:{self.listen_port}")
+
         server = await asyncio.start_server(self.handle_client, self.listen_ip,
                                             self.listen_port)
         addr = server.sockets[0].getsockname()
-        print(f'Serving on {addr}')
+        logger.info(f"Serving on {addr}")
         asyncio.create_task(self.cleanup_clients())
         async with server:
             await server.serve_forever()

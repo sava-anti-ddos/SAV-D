@@ -30,7 +30,9 @@ async def issue_rules_main(rules):
 
 
 async def main():
-    test_rules = [['192.168.0.1', '192.168.0.2'], ['192.168.0.3', '192.168.0.4'], ['192.168.0.5', '192.168.0.6']]
+    test_rules = [['192.168.0.1',
+                   '192.168.0.2'], ['192.168.0.3', '192.168.0.4'],
+                  ['192.168.0.5', '192.168.0.6']]
     # asyncio.gather run two task
     server_task = asyncio.create_task(transport_server())
     rules_task = asyncio.create_task(issue_rules_main(test_rules))

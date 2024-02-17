@@ -1,3 +1,8 @@
+from log import get_logger
+
+logger = get_logger(__name__)
+
+
 class Information:
     """
     This class represents information data.
@@ -42,6 +47,7 @@ class RuleGenerator:
         Returns:
             None
         """
+        logger.info("RuleGenerator set info: " + information)
         self.info = information
 
     def launch(self):
@@ -49,7 +55,7 @@ class RuleGenerator:
         Opens a connection to the database and prints a message.
         """
         self.connection = self.db.get_connection()
-        print("Connection opened")
+        logger.info("Open a connection to db")
 
     def fetch_data(self):
         """
@@ -58,6 +64,7 @@ class RuleGenerator:
         Returns:
             list: A list of tuples containing the fetched data.
         """
+        logger.info("Fetch data from the blacklist table")
         try:
             cursor = self.connection.cursor()
             query = f"SELECT {', '.join(self.info)} FROM Blacklist"
@@ -73,6 +80,7 @@ class RuleGenerator:
         Returns:
             list: A list of rules generated from the fetched data.
         """
+        logger.info("Generate rules")
         data = self.fetch_data()
         rules = []
         for row in data:
@@ -86,4 +94,4 @@ class RuleGenerator:
         """
         self.conn = None
         self.db.release_connection(self.connection)
-        print("Connection closed")
+        logger.info("Connection closed")
