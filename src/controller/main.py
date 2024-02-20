@@ -3,6 +3,9 @@ import asyncio
 from controller import TransportServer
 from config import Config
 from rule_issuance import IssueRules
+from log import get_logger
+
+logger = get_logger(__name__)
 
 # Create a server instance and all the devices will connect to this
 server = TransportServer(Config.controller_ip, Config.controller_port)
@@ -13,6 +16,7 @@ async def transport_server():
     """
     Function to start the transport server.
     """
+    logger.info("Starting transport server")
     await server.start_server()
 
 
@@ -20,16 +24,16 @@ async def issue_rules_main(rules):
     """
     Main function to start the issue rules process.
     """
+    logger.info("Starting issue rules main")
     while True:
         try:
-            print("Issuing rules")
             await asyncio.sleep(15)
             await issue_rules.send_rules(rules)
         except Exception as e:
-            print(f"Error in issue_rules_main: {e}")
-
+            logger.error(f"Error in issue_rules_main: {e}")
 
 async def main():
+    logger.info("Starting main")
     test_rules = [['192.168.0.1',
                    '192.168.0.2'], ['192.168.0.3', '192.168.0.4'],
                   ['192.168.0.5', '192.168.0.6']]
