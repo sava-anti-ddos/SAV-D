@@ -10,7 +10,7 @@ script_dir = os.path.dirname(__file__)  # 获取当前脚本的目录
 project_root = os.path.join(script_dir, '..')  # 计算项目根目录
 sys.path.append(os.path.normpath(project_root))  # 添加到sys.path
 
-from src.device.device_config import Config
+from src.device.config import Config
 
 
 class SAVDProtocol:

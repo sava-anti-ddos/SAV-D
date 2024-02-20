@@ -2,7 +2,7 @@ import sys
 import asyncio
 
 sys.path.append('src')
-from src.device.device_config import Config
+from src.device.config import Config
 from src.device.monitor import DoubleQueue, PacketInformationUpload, PacketSniffer, Transport
 
 
