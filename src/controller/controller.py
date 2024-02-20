@@ -180,7 +180,6 @@ class TransportServer:
             writer.close()
             await writer.wait_closed()
 
-    @staticmethod
     async def dispatch_message(self, client, server, message):
         """
         Dispatches a message to the appropriate handler based on the protocol type.
