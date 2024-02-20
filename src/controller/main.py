@@ -32,6 +32,7 @@ async def issue_rules_main(rules):
         except Exception as e:
             logger.error(f"Error in issue_rules_main: {e}")
 
+
 async def main():
     logger.info("Starting main")
     test_rules = [['192.168.0.1',

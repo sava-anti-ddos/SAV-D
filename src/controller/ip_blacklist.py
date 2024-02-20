@@ -476,10 +476,12 @@ class CSVHandler:
                 with open(file_path, mode='r', encoding=self.encoding) as file:
                     reader = csv.reader(file)
                     for row in reader:
-                        parts = row[0].split(',')
-                        sip, dip, sport, dport, protocol, tcp_flag, timestamp, length = parts
-                        sport = int(sport)
-                        dport = int(dport)
+                        # parts = row[0].split(',')
+                        # sip, dip, sport, dport, protocol, tcp_flag, timestamp, length = parts
+                        # sport = int(sport)
+                        # dport = int(dport)
+                        (sip, dip, sport, dport, protocol, tcp_flag, timestamp,
+                         length) = row
                         record = {
                             'sip':
                                 sip,

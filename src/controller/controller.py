@@ -3,7 +3,7 @@ import struct
 import json
 from datetime import datetime, timedelta
 from config import Config
-from ddos_attack_detection import SAVAPacketSniffer
+from ddos_attack_detection import SAVAPacketSniffer, DDoS
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -214,8 +214,8 @@ class TransportServer:
                 logger.info(f"Received sniffer data from {client}")
                 # Ensure payload is a list before passing to sniffer_receive
                 if isinstance(protocol_instance.payload, list):
-                    sniffer = SAVAPacketSniffer()
-                    sniffer.sniffer_receive(protocol_instance.payload)
+                    data_analyser = DDoS()
+                    data_analyser.detect_ddos(protocol_instance.payload)
                 # Send response to client
                 await self.respones_to_client(client, server[1],
                                               "sniffer data received", 1)

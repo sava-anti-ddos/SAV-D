@@ -29,3 +29,5 @@ class Config:
     encoding = config.get('sniffer', 'encoding')
 
     log_path = config.get('log', 'log_path')
+
+    threshold = config.get('ddos', 'threshold')
