@@ -27,3 +27,5 @@ class Config:
     writeinfo_path = config.get('sniffer', 'writeinfo_path')
 
     encoding = config.get('sniffer', 'encoding')
+
+    log_path = config.get('log', 'log_path')
