@@ -3,7 +3,6 @@ import csv
 import queue
 import threading
 import datetime
-from config import Config
 from device import Transport
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
@@ -17,7 +16,7 @@ class DoubleQueue:
     A class that represents a double-ended queue for storing data.
     """
 
-    def __init__(self):
+    def __init__(self, Config):
         """
         Initializes the Monitor object.
 
@@ -31,6 +30,7 @@ class DoubleQueue:
         Returns:
             None
         """
+        self.Config = Config
         self.queue0 = queue.Queue(maxsize=Config.sniffer_queue_size)
         self.queue1 = queue.Queue(maxsize=Config.sniffer_queue_size)
         self.current_queue = 0
@@ -71,9 +71,9 @@ class DoubleQueue:
         """
         logger.info("Writing data to disk")
         # csv file format to store the queue data
-        logger.info("file path: " + Config.sniffer_file_path)
-        file_path = os.path.join(Config.sniffer_file_path,
-                                 Config.sniffer_file_name)
+        logger.info("file path: " + self.Config.sniffer_file_path)
+        file_path = os.path.join(self.Config.sniffer_file_path,
+                                 self.Config.sniffer_file_name)
         with open(file_path, 'a') as f:
             writer = csv.writer(f)
             while not queue.empty():
@@ -96,8 +96,8 @@ class DoubleQueue:
         """
         logger.info("Moving file to upload directory")
         # make a dir to store the file need to upload
-        if not os.path.exists(f"{Config.sniffer_file_path}/upload"):
-            os.makedirs(f"{Config.sniffer_file_path}/upload")
+        if not os.path.exists(f"{self.Config.sniffer_file_path}/upload"):
+            os.makedirs(f"{self.Config.sniffer_file_path}/upload")
 
         logger.info("Renaming file by time and moving to upload directory")
         # rename the file by time
@@ -106,10 +106,12 @@ class DoubleQueue:
         # move the file to the upload dir
         logger.info(
             "file rename to: " +
-            f"{Config.sniffer_file_path}/upload/sniffer-{current_time}.csv")
+            f"{self.Config.sniffer_file_path}/upload/sniffer-{current_time}.csv"
+        )
         os.rename(
             file_path,
-            f"{Config.sniffer_file_path}/upload/sniffer-{current_time}.csv")
+            f"{self.Config.sniffer_file_path}/upload/sniffer-{current_time}.csv"
+        )
 
         logger.info("File moved to upload directory")
 
@@ -119,7 +121,7 @@ class PacketSniffer:
     A class that represents a network sniffer.
     """
 
-    def __init__(self, Interface=None):
+    def __init__(self, Interface=None, Config=None):
         """
         Initialize the Monitor object.
 
@@ -129,7 +131,7 @@ class PacketSniffer:
         Returns:
             None
         """
-        self.packet_sniffer_queue = DoubleQueue()
+        self.packet_sniffer_queue = DoubleQueue(Config)
         if Interface is None:
             self.interfaces = get_if_list()
         else:
@@ -204,7 +206,8 @@ class PacketSniffer:
             This method creates a separate thread for each network interface
             and calls the `sniff_interface` method to start sniffing on that interface.
             """
-        logger.info("Starting packet sniffer")
+        logger.info(f"Starting packet sniffer on interfaces: " +
+                    self.interfaces)
         threads = []
         for interface in self.interfaces:
             t = threading.Thread(target=self.sniff_interface,
@@ -219,7 +222,7 @@ class PacketInformationUpload:
     A class that handles the upload of packet information.
     """
 
-    def __init__(self, ip=None, port=None, transport=None):
+    def __init__(self, ip=None, port=None, transport=None, Config=None):
         """
             Initializes the Monitor object.
 
@@ -239,6 +242,8 @@ class PacketInformationUpload:
         else:
             self.transport_bus = Transport(self.upload_server_ip,
                                            self.upload_server_port)
+
+        self.Config = Config
 
     def format_lines_as_csv(self, lines):
         """
@@ -283,12 +288,12 @@ class PacketInformationUpload:
 
             """
         logger.info("Getting data from local")
-        file_path = os.path.join(Config.sniffer_file_path, 'upload')
+        file_path = os.path.join(self.Config.sniffer_file_path, 'upload')
         file_list = os.listdir(file_path)
         logger.info(f"File list: {file_list}")
         # make a dir to store the uploaded file
-        if not os.path.exists(f"{Config.sniffer_file_path}/uploaded"):
-            os.makedirs(f"{Config.sniffer_file_path}/uploaded")
+        if not os.path.exists(f"{self.Config.sniffer_file_path}/uploaded"):
+            os.makedirs(f"{self.Config.sniffer_file_path}/uploaded")
 
         for file in file_list:
             # if file not upload, upload it and rename it with .uploaded
@@ -307,6 +312,7 @@ class PacketInformationUpload:
                     await self.upload_packet_information(lines_buffer)
             logger.info(f"Uploaded file: {file}")
             logger.info(
-                f"Fule rename to {Config.sniffer_file_path}/uploaded/{file}")
+                f"Fule rename to {self.Config.sniffer_file_path}/uploaded/{file}"
+            )
             os.rename(f"{file_path}/{file}",
-                      f"{Config.sniffer_file_path}/uploaded/{file}")
+                      f"{self.Config.sniffer_file_path}/uploaded/{file}")

@@ -2,9 +2,7 @@ import asyncio
 import json
 import struct
 from datetime import datetime
-
 from rule_receive import ReceiveRule
-from config import Config
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -74,7 +72,7 @@ class Transport:
     A class that handles the transport of data to the server.
     """
 
-    def __init__(self, ip=None, port=None):
+    def __init__(self, ip=None, port=None, Config=None):
         """
             Initializes a TransportClient object.
 
@@ -90,6 +88,7 @@ class Transport:
         self.reader_lock = asyncio.Lock()
         self.writer = None
         self.connected = False
+        self.Config = Config
 
     async def connect_to_server(self):
         """
