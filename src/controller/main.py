@@ -5,6 +5,7 @@ from config import Config
 from rule_issuance import IssueRules
 from ip_blacklist import CSVHandler, BlacklistDatabase
 from log import get_logger
+from pyfiglet import Figlet
 
 logger = get_logger(__name__)
 
@@ -49,7 +50,7 @@ async def sniffer_csv_file_store2db_main():
             if data:
                 ip_blacklist.blacklist_update_batch(data)
         except Exception as e:
-            logger.error(f"Error in csv_file_store_main: {e}")
+            logger.error(f"Error in sniffer_csv_file_store2db_main: {e}")
 
 
 async def main():
@@ -64,7 +65,20 @@ async def main():
     )
 
 
-if __name__ == "__main__":
+def banner():
+    """
+    Print the banner for the device.
 
+    Returns:
+        None
+    """
+    figlet = Figlet(font='slant')
+    rendered_text = figlet.renderText("SAV-D Controller")
+    print(rendered_text)
+    print("Contact URL: www.sava-anti-ddos.com")
+
+
+if __name__ == "__main__":
+    banner()
     # Start the SAVD controller
     asyncio.run(main())

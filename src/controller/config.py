@@ -18,17 +18,17 @@ class Config:
 
     # Get the controller IP and port from the config file
     controller_ip = config.get('controller', 'controller_ip')
-    controller_port = config.get('controller', 'controller_port')
+    controller_port = config.getint('controller', 'controller_port')
 
     db_path = config.get('database', 'db_path')
 
     name = config.get('sniffer', 'name')
     readinfo_path = config.get('sniffer', 'readinfo_path')
     writeinfo_path = config.get('sniffer', 'writeinfo_path')
-    task_time = config.get('sniffer', 'task_time')
+    task_time = config.getint('sniffer', 'task_time')
 
     encoding = config.get('sniffer', 'encoding')
 
     log_path = config.get('log', 'log_path')
 
-    threshold = config.get('ddos', 'threshold')
+    threshold = config.getint('ddos', 'threshold')
