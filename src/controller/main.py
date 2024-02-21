@@ -3,6 +3,7 @@ import asyncio
 from controller import TransportServer
 from config import Config
 from rule_issuance import IssueRules
+from ip_blacklist import CSVHandler, BlacklistDatabase
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -10,6 +11,7 @@ logger = get_logger(__name__)
 # Create a server instance and all the devices will connect to this
 server = TransportServer(Config.controller_ip, Config.controller_port)
 issue_rules = IssueRules(server)
+ip_blacklist = BlacklistDatabase(Config.db_path)
 
 
 async def transport_server():
@@ -25,25 +27,40 @@ async def issue_rules_main(rules):
     Main function to start the issue rules process.
     """
     logger.info("Starting issue rules main")
+    # while True:
+    #     try:
+    #         await asyncio.sleep(15)
+    #         await issue_rules.send_rules(rules)
+    #     except Exception as e:
+    #         logger.error(f"Error in issue_rules_main: {e}")
+
+
+async def sniffer_csv_file_store2db_main():
+    """
+    Main function to start the CSV file store process.
+    """
+    logger.info("Starting csv file store main")
     while True:
         try:
-            await asyncio.sleep(15)
-            await issue_rules.send_rules(rules)
+            await asyncio.sleep(Config.task_time)
+            csv_handler = CSVHandler(Config.readinfo_path,
+                                     Config.writeinfo_path, Config.encoding)
+            data = csv_handler.csv_read_and_move()
+            if data:
+                ip_blacklist.blacklist_update_batch(data)
         except Exception as e:
-            logger.error(f"Error in issue_rules_main: {e}")
+            logger.error(f"Error in csv_file_store_main: {e}")
 
 
 async def main():
     logger.info("Starting main")
-    test_rules = [['192.168.0.1',
-                   '192.168.0.2'], ['192.168.0.3', '192.168.0.4'],
-                  ['192.168.0.5', '192.168.0.6']]
-    # asyncio.gather run two task
     server_task = asyncio.create_task(transport_server())
-    rules_task = asyncio.create_task(issue_rules_main(test_rules))
+    rules_task = asyncio.create_task(issue_rules_main([]))
+    csv_store_task = asyncio.create_task(sniffer_csv_file_store2db_main())
     await asyncio.gather(
         server_task,
         rules_task,
+        csv_store_task,
     )
 
 

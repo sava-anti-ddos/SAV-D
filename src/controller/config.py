@@ -25,6 +25,7 @@ class Config:
     name = config.get('sniffer', 'name')
     readinfo_path = config.get('sniffer', 'readinfo_path')
     writeinfo_path = config.get('sniffer', 'writeinfo_path')
+    task_time = config.get('sniffer', 'task_time')
 
     encoding = config.get('sniffer', 'encoding')
 

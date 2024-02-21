@@ -1,5 +1,6 @@
 import csv
 import os
+import time
 from config import Config
 from log import get_logger
 from rule_issuance import IssueRules
@@ -44,8 +45,8 @@ class SAVAPacketSniffer:
 class DDoS:
 
     def __init__(self):
-        self.sniffer = SAVAPacketSniffer()
-        self.baseline = None
+        self.baseline = {}
+        self.count_array = {}
         self.threshold = Config.threshold
         self.rule_issuance = IssueRules()
 
@@ -63,13 +64,15 @@ class DDoS:
         for row in data:
             (sip, dip, sport, dport, protocol, flags, timestamp, length) = row
             # Check if the packet is part of a DDoS attack
-            self.baseline[dip] += 1
+            self.count_array[timestamp] += 1
+            for key in self.count_array:
+                self.baseline[(sip, dip)] += self.count_array[key]
+                if timestamp - key > 60:
+                    self.baseline[(sip, dip)] -= self.count_array[key]
+                    self.count_array.pop(key)
 
-            if self.baseline[dip] > self.threshold:
+            if self.baseline[(sip, dip)] > self.threshold:
                 logger.info(f"DDoS attack detected from {sip} to {dip}")
                 self.rule_issuance.send_rules([sip, dip])
                 return True
-
-        # store files to csv for future analysis
-        self.sniffer.sniffer_receive(data)
         return False
