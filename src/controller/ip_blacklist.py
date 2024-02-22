@@ -454,10 +454,14 @@ class CSVHandler:
         self.csv_dir = readpath
         self.target_dir = writepath
         self.encoding = encodetype
-        if not os.path.exists(Config.writeinfo_path):
-            logger.error(f"The directory does not exist: " +
-                         Config.writeinfo_path)
-            return
+
+        if not os.path.exists(readpath):
+            logger.info(f"The directory does not exist: " + readpath)
+            os.makedirs(readpath)
+
+        if not os.path.exists(writepath):
+            logger.info(f"The directory does not exist: " + writepath)
+            os.makedirs(writepath)
 
     def csv_read_and_move(self):
         """

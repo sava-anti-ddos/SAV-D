@@ -38,7 +38,7 @@ class Configuration:
         self.sniffer_file_name = self.config.get('monitor', 'sniffer_file_name')
         self.sniffer_queue_size = self.config.getint('monitor',
                                                      'sniffer_queue_size')
-        self.sniffer_interface_config = self.config.get(
+        self.sniffer_interface_config = self.config.getint(
             'monitor', 'sniffer_interface_config')
         self.sniffer_interface = self.config.get('monitor', 'sniffer_interface')
         self.sniffer_upload_interval = self.config.getint(
@@ -67,7 +67,8 @@ class Configuration:
         string += "sniffer_file_path: " + self.sniffer_file_path + "\n"
         string += "sniffer_file_name: " + self.sniffer_file_name + "\n"
         string += "sniffer_queue_size: " + str(self.sniffer_queue_size) + "\n"
-        string += "sniffer_interface_config: " + self.sniffer_interface_config + "\n"
+        string += "sniffer_interface_config: " + str(
+            self.sniffer_interface_config) + "\n"
         string += "sniffer_interface: " + self.sniffer_interface + "\n"
         string += "sniffer_upload_interval: " + str(
             self.sniffer_upload_interval) + "\n"

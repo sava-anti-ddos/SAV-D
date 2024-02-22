@@ -77,6 +77,9 @@ def banner():
     print(rendered_text)
     print("Contact URL: www.sava-anti-ddos.com")
 
+    logger.info(f"\n" + rendered_text)
+    logger.info("Contact URL: www.sava-anti-ddos.com")
+
 
 if __name__ == "__main__":
     banner()

@@ -8,6 +8,9 @@ from log import get_logger
 
 logger = get_logger(__name__)
 
+# global ddos instance for dectection
+ddos = DDoS()
+
 
 class SAVDProtocol:
     """
@@ -214,11 +217,12 @@ class TransportServer:
                 logger.info(f"Received sniffer data from {client}")
                 # Ensure payload is a list before passing to sniffer_receive
                 if isinstance(protocol_instance.payload, list):
-                    ddos = DDoS()
-                    ddos.detect_ddos(protocol_instance.payload)
-
-                    sniffer = SAVAPacketSniffer()
+                    (ip, port) = client
+                    file_name = f"{ip}_{port}_sniffer_data.csv"
+                    logger.info(f"Writing sniffer data to {file_name}")
+                    sniffer = SAVAPacketSniffer(file_name)
                     sniffer.sniffer_receive(protocol_instance.payload)
+                    await ddos.detect_ddos(protocol_instance.payload)
                 # Send response to client
                 await self.respones_to_client(client, server[1],
                                               "sniffer data received", 1)

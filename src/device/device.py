@@ -3,6 +3,7 @@ import json
 import struct
 from datetime import datetime
 from rule_receive import ReceiveRule
+from monitor import PacketInformationUpload
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -82,12 +83,21 @@ class Transport:
             """
         self.server_ip = ip
         self.server_port = port
-        self.heartbeat_interval = Config.heartbeat_interval
-        self.reconnect_interval = Config.reconnect_interval
+
         self.reader = None
         self.reader_lock = asyncio.Lock()
         self.writer = None
+
+        self.connection_ready = asyncio.Event()
         self.connected = False
+
+        if Config is not None:
+            self.heartbeat_interval = Config.heartbeat_interval
+            self.reconnect_interval = Config.reconnect_interval
+        else:
+            self.heartbeat_interval = 60
+            self.reconnect_interval = 5
+
         self.Config = Config
 
     async def connect_to_server(self):
@@ -107,11 +117,13 @@ class Transport:
             logger.info(
                 f"Connected to controller at {self.server_ip}:{self.server_port}"
             )
-        except Exception as e:
+        except OSError as e:
             self.connected = False
             logger.error(f"Connection failed: {e}. Reconnecting...")
             await asyncio.sleep(self.reconnect_interval)
-            await self.connect_to_server()
+            return await self.connect_to_server()
+
+        return self.connected
 
     async def send_heartbeat(self):
         """
@@ -129,9 +141,11 @@ class Transport:
 
             """
         while True:
-            if self.connected:
+            try:
                 await self.send_data(0, "heartbeat")
                 logger.info(f"Heartbeat sent.")
+            except Exception as e:
+                logger.error(f"Failed to send heartbeat: {e}")
             await asyncio.sleep(self.heartbeat_interval)
 
     @staticmethod
@@ -202,14 +216,17 @@ class Transport:
             Returns:
                 None
             """
-        logger.info(f"Sending data to the controller: {payload}")
+        logger.info(f"Sending data to the controller: {message_type, payload}")
         if not self.connected:
             await self.connect_to_server()
-        protocol_instance = SAVDProtocol(message_type, payload)
-        serialized_data = protocol_instance.serialize()
-        data_length_bytes = struct.pack("!I",
-                                        len(serialized_data.encode('utf-8')))
-        await self.send(serialized_data, data_length_bytes)
+        try:
+            protocol_instance = SAVDProtocol(message_type, payload)
+            serialized_data = protocol_instance.serialize()
+            data_length_bytes = struct.pack(
+                "!I", len(serialized_data.encode('utf-8')))
+            await self.send(serialized_data, data_length_bytes)
+        except Exception as e:
+            logger.error(f"Failed to send data: {e}")
 
     async def send(self, data, data_length_bytes):
         """
@@ -226,15 +243,20 @@ class Transport:
                 None
             """
         logger.info(f"send data: {data}")
-        if self.writer is not None and not self.writer.is_closing():
-            self.writer.write(data_length_bytes)
-            await self.writer.drain()
-            self.writer.write(data.encode('utf-8'))
-            await self.writer.drain()
-            logger.info(f"Data sent: {data}")
-        else:
-            logger.info("Connection is closed. Attempting to reconnect...")
-            await self.connect_to_server()
+        try:
+            if self.writer is not None and not self.writer.is_closing():
+                self.writer.write(data_length_bytes)
+                await self.writer.drain()
+
+                self.writer.write(data.encode('utf-8'))
+                await self.writer.drain()
+
+                logger.info(f"Data sent: {data}")
+            else:
+                logger.info("Connection is closed. Attempting to reconnect...")
+                await self.connect_to_server()
+        except ConnectionError as e:
+            logger.error(f"Failed to send data: {e}")
 
     async def start(self):
         """
@@ -243,9 +265,19 @@ class Transport:
         """
         logger.info("Starting device transport client")
         await self.connect_to_server()
+
+        await asyncio.sleep(6)
+        self.connection_ready.set()
+
+        packet_info_upload = PacketInformationUpload(self.server_ip,
+                                                     self.server_port, self,
+                                                     self.Config)
         tasks = [
             asyncio.create_task(self.send_heartbeat()),
             asyncio.create_task(self.listen_for_messages()),
+            asyncio.create_task(packet_info_upload.periodic_upload())
         ]
-        logger.info("Tasks created. Starting event loop.")
+        logger.info(
+            "Tasks send_heartbeat and listen_for_mesages created. Starting event loop."
+        )
         await asyncio.gather(*tasks)

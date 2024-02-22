@@ -9,13 +9,29 @@ class Log:
 
     def setup_logging(self, name):
         log_file = os.path.join('/var/log/', 'savd_device.log')
-        logging.basicConfig(
-            filename=log_file,
-            filemode='a',
-            format='[%(asctime)s]-%(levelname)s-%(name)s: %(message)s',
-            level=logging.INFO)
+
+        debug_log_file = os.path.join('/var/log/', 'savd_device_debug.log')
+
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.DEBUG)
+
+        file_handler = logging.FileHandler(log_file, mode='a')
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(
+            logging.Formatter(
+                '[%(asctime)s]-%(levelname)s-%(name)s: %(message)s'))
+
+        debug_file_handler = logging.FileHandler(debug_log_file, mode='a')
+        debug_file_handler.setLevel(logging.DEBUG)
+        debug_file_handler.setFormatter(
+            logging.Formatter(
+                '[%(asctime)s]-%(levelname)s-%(name)s: %(message)s'))
+
+        logger.addHandler(file_handler)
+        logger.addHandler(debug_file_handler)
+
         # Assign and return the logger instance to be used by Log instances
-        return logging.getLogger(name)
+        return logger
 
 
 def get_logger(name):

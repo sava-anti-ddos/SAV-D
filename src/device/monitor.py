@@ -3,7 +3,7 @@ import csv
 import queue
 import threading
 import datetime
-from device import Transport
+import asyncio
 from io import StringIO
 from scapy.all import sniff, get_if_list, IP, TCP, UDP, ICMP, ARP
 from log import get_logger
@@ -16,7 +16,7 @@ class DoubleQueue:
     A class that represents a double-ended queue for storing data.
     """
 
-    def __init__(self, Config):
+    def __init__(self, Config=None):
         """
         Initializes the Monitor object.
 
@@ -30,9 +30,17 @@ class DoubleQueue:
         Returns:
             None
         """
-        self.Config = Config
-        self.queue0 = queue.Queue(maxsize=Config.sniffer_queue_size)
-        self.queue1 = queue.Queue(maxsize=Config.sniffer_queue_size)
+        if Config is not None:
+            self.queue0 = queue.Queue(maxsize=Config.sniffer_queue_size)
+            self.queue1 = queue.Queue(maxsize=Config.sniffer_queue_size)
+            self.sniffer_file_path = Config.sniffer_file_path
+            self.sniffer_file_name = Config.sniffer_file_name
+        else:
+            self.queue0 = queue.Queue(maxsize=100)
+            self.queue1 = queue.Queue(maxsize=100)
+            self.sniffer_file_path = "/tmp"
+            self.sniffer_file_name = "sniffer.csv"
+
         self.current_queue = 0
 
     def add_data(self, data):
@@ -42,7 +50,7 @@ class DoubleQueue:
         Parameters:
         - data: The data to be added to the queue.
         """
-        logger.info(f"Adding data to the queue: {data}")
+        logger.debug(f"Adding data to the queue: {data}")
         current_queue = self.queue0 if self.current_queue == 0 else self.queue1
         current_queue.put(data)
 
@@ -71,9 +79,8 @@ class DoubleQueue:
         """
         logger.info("Writing data to disk")
         # csv file format to store the queue data
-        logger.info("file path: " + self.Config.sniffer_file_path)
-        file_path = os.path.join(self.Config.sniffer_file_path,
-                                 self.Config.sniffer_file_name)
+        logger.info("file path: " + self.sniffer_file_path)
+        file_path = os.path.join(self.sniffer_file_path, self.sniffer_file_name)
         with open(file_path, 'a') as f:
             writer = csv.writer(f)
             while not queue.empty():
@@ -96,8 +103,8 @@ class DoubleQueue:
         """
         logger.info("Moving file to upload directory")
         # make a dir to store the file need to upload
-        if not os.path.exists(f"{self.Config.sniffer_file_path}/upload"):
-            os.makedirs(f"{self.Config.sniffer_file_path}/upload")
+        if not os.path.exists(f"{self.sniffer_file_path}/upload"):
+            os.makedirs(f"{self.sniffer_file_path}/upload")
 
         logger.info("Renaming file by time and moving to upload directory")
         # rename the file by time
@@ -106,12 +113,10 @@ class DoubleQueue:
         # move the file to the upload dir
         logger.info(
             "file rename to: " +
-            f"{self.Config.sniffer_file_path}/upload/sniffer-{current_time}.csv"
-        )
+            f"{self.sniffer_file_path}/upload/sniffer-{current_time}.csv")
         os.rename(
             file_path,
-            f"{self.Config.sniffer_file_path}/upload/sniffer-{current_time}.csv"
-        )
+            f"{self.sniffer_file_path}/upload/sniffer-{current_time}.csv")
 
         logger.info("File moved to upload directory")
 
@@ -131,11 +136,42 @@ class PacketSniffer:
         Returns:
             None
         """
+        self.interfaces = []
+        if Config is not None:
+            self.sniffer_file_path = Config.sniffer_file_path
+        else:
+            self.sniffer_file_path = "/tmp"
+
         self.packet_sniffer_queue = DoubleQueue(Config)
+
         if Interface is None:
             self.interfaces = get_if_list()
         else:
-            self.interfaces = [Interface]
+            self.interfaces.append(Interface)
+
+        self.init_sniffer_dir()
+
+    def init_sniffer_dir(self):
+        """
+        Initialize the sniffer directory.
+
+        This method creates the sniffer directory if it does not exist.
+        """
+        if not os.path.exists(self.sniffer_file_path):
+            os.makedirs(self.sniffer_file_path)
+
+        # make a dir to store the file need to upload
+        if not os.path.exists(f"{self.sniffer_file_path}/upload"):
+            os.makedirs(f"{self.sniffer_file_path}/upload")
+
+        # make a dir to store the file need to upload
+        if not os.path.exists(f"{self.sniffer_file_path}/uploaded"):
+            os.makedirs(f"{self.sniffer_file_path}/uploaded")
+
+        # check if the dir exists
+        logger.info(f"Sniffer file path: {self.sniffer_file_path}")
+        logger.info(f"Sniffer upload path: {self.sniffer_file_path}/upload")
+        logger.info(f"Sniffer uploaded path: {self.sniffer_file_path}/uploaded")
 
     def sniff_interface(self, interface):
         """
@@ -160,7 +196,7 @@ class PacketSniffer:
         Returns:
             None
         """
-        logger.info(f"Handling packet: {packet}")
+        logger.debug(f"Handling packet: {packet}")
 
         src_ip = dst_ip = packet_len = None
         protocol = None
@@ -207,7 +243,7 @@ class PacketSniffer:
             and calls the `sniff_interface` method to start sniffing on that interface.
             """
         logger.info(f"Starting packet sniffer on interfaces: " +
-                    self.interfaces)
+                    "".join(self.interfaces))
         threads = []
         for interface in self.interfaces:
             t = threading.Thread(target=self.sniff_interface,
@@ -241,7 +277,12 @@ class PacketInformationUpload:
             self.transport_bus = transport
         else:
             self.transport_bus = Transport(self.upload_server_ip,
-                                           self.upload_server_port)
+                                           self.upload_server_port, Config)
+
+        if Config is not None:
+            self.sniffer_file_path = Config.sniffer_file_path
+        else:
+            self.sniffer_file_path = "/tmp"
 
         self.Config = Config
 
@@ -288,12 +329,12 @@ class PacketInformationUpload:
 
             """
         logger.info("Getting data from local")
-        file_path = os.path.join(self.Config.sniffer_file_path, 'upload')
+        file_path = os.path.join(self.sniffer_file_path, 'upload')
         file_list = os.listdir(file_path)
         logger.info(f"File list: {file_list}")
         # make a dir to store the uploaded file
-        if not os.path.exists(f"{self.Config.sniffer_file_path}/uploaded"):
-            os.makedirs(f"{self.Config.sniffer_file_path}/uploaded")
+        if not os.path.exists(f"{self.sniffer_file_path}/uploaded"):
+            os.makedirs(f"{self.sniffer_file_path}/uploaded")
 
         for file in file_list:
             # if file not upload, upload it and rename it with .uploaded
@@ -312,7 +353,25 @@ class PacketInformationUpload:
                     await self.upload_packet_information(lines_buffer)
             logger.info(f"Uploaded file: {file}")
             logger.info(
-                f"Fule rename to {self.Config.sniffer_file_path}/uploaded/{file}"
-            )
+                f"Fule rename to {self.sniffer_file_path}/uploaded/{file}")
             os.rename(f"{file_path}/{file}",
-                      f"{self.Config.sniffer_file_path}/uploaded/{file}")
+                      f"{self.sniffer_file_path}/uploaded/{file}")
+
+    async def periodic_upload(self):
+        """
+        Periodically gets data from local and uploads it using the given PacketInformationUpload instance.
+
+        Args:
+            packet_info_upload (PacketInformationUpload): The instance used to upload packet information.
+
+        Returns:
+            None
+        """
+        while True:
+            logger.info("Uploading sniffer data to controller")
+            await self.get_data_from_local()
+            logger.info("Data uploaded to controller")
+
+            logger.info("Sleeping for " +
+                        str(self.Config.sniffer_upload_interval) + " seconds")
+            await asyncio.sleep(self.Config.sniffer_upload_interval)

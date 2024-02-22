@@ -14,38 +14,6 @@ global Config
 global transport
 
 
-async def periodic_upload(packet_info_upload):
-    """
-    Periodically gets data from local and uploads it using the given PacketInformationUpload instance.
-
-    Args:
-        packet_info_upload (PacketInformationUpload): The instance used to upload packet information.
-
-    Returns:
-        None
-    """
-    while True:
-        logger.info("Uploading sniffer data to controller")
-        await packet_info_upload.get_data_from_local()
-        logger.info("Data uploaded to controller")
-
-        logger.info("Sleeping for " + str(Config.sniffer_upload_interval) +
-                    " seconds")
-        await asyncio.sleep(Config.sniffer_upload_interval)
-
-
-async def periodic_upload_main():
-    """
-    Main function to start the periodic upload process.
-
-    Returns:
-        None
-    """
-    # Create a packet information upload instance
-    upload = PacketInformationUpload(transport)
-    await periodic_upload(upload)
-
-
 def banner():
     """
     Print the banner for the device.
@@ -57,6 +25,9 @@ def banner():
     rendered_text = figlet.renderText("SAVA Simulator")
     print(rendered_text)
     print("Contact URL: www.sava-anti-ddos.com")
+
+    logger.info(f"\n" + rendered_text)
+    logger.info("Contact URL: www.sava-anti-ddos.com")
 
 
 if __name__ == "__main__":
@@ -79,9 +50,11 @@ if __name__ == "__main__":
 
     # Load the configuration from the file
     Config = initialize_config(args.file)
+
     transport = Transport(Config.controller_ip, Config.controller_port, Config)
 
     # Configure the device based on the mode
+    logger.info(f"Mode of operation: {args.mode}")
     if args.mode == "sava":
         Config.is_sava = True
     elif args.mode == "anti-ddos-device":
@@ -89,25 +62,21 @@ if __name__ == "__main__":
     else:
         parser.print_help()
 
-    # Start the connection to controller
-    logger.info("Starting transport to controller")
-    asyncio.run(transport.start())
-    logger.info("Transport started")
-
+    logger.info(f"Check device is sava:" + str(Config.is_sava))
     if Config.is_sava:
         # Create a packet sniffer instance
         logger.info("Starting packet sniffer")
         if Config.sniffer_interface_config == 0:
+            logger.info(f"Sniffer at interface: " + Config.sniffer_interface)
             sniffer = PacketSniffer(Interface=Config.sniffer_interface,
                                     Config=Config)
         else:
+            logger.info(f"Sniffer at all interfaces")
             sniffer = PacketSniffer(Config=Config)
 
         # SAVA device start sinffer
-        logger.info("Sniffer at interface")
         sniffer.start()
 
-        # Start the periodic upload
-        logger.info("Starting periodic upload")
-        asyncio.run(periodic_upload_main())
-        logger.info("Periodic upload started")
+    # Start the SAVA device
+    logger.info("Starting SAVA device")
+    asyncio.run(transport.start())
