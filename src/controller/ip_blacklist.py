@@ -12,9 +12,9 @@ from log import get_logger
 logger = get_logger(__name__)
 
 
-class BlacklistDatabase:
+class Database:
     """
-    A singleton class representing a database for managing IP blacklists.
+    A singleton class representing a database for managing IP SnifferInfos.
 
     Attributes:
         db_name (str): The name of the database file.
@@ -25,14 +25,14 @@ class BlacklistDatabase:
         create_connection: Creates a new database connection.
         get_connection: Retrieves a connection from the connection pool.
         release_connection: Releases a connection back to the connection pool.
-        create_table: Creates the Blacklist table if it doesn't exist.
-        blacklist_update: Updates or inserts a new entry in the Blacklist table.
-        blacklist_update_batch: Updates or inserts multiple entries in the Blacklist table.
-        duration_update: Updates the duration of each entry in the Blacklist table.
-        timeout_remove: Removes entries from the Blacklist table based on a duration threshold.
-        display: Displays all entries in the Blacklist table.
-        delete: Deletes an entry from the Blacklist table.
-        id_reset: Resets the primary key of the Blacklist table.
+        create_table: Creates the SnifferInfo table if it doesn't exist.
+        SnifferInfo_update: Updates or inserts a new entry in the SnifferInfo table.
+        SnifferInfo_update_batch: Updates or inserts multiple entries in the SnifferInfo table.
+        duration_update: Updates the duration of each entry in the SnifferInfo table.
+        timeout_remove: Removes entries from the SnifferInfo table based on a duration threshold.
+        display: Displays all entries in the SnifferInfo table.
+        delete: Deletes an entry from the SnifferInfo table.
+        id_reset: Resets the primary key of the SnifferInfo table.
         clear: Clears all data from the database.
         close: Closes all database connections.
 
@@ -54,12 +54,12 @@ class BlacklistDatabase:
 
         """
         if not cls._instance:
-            cls._instance = super(BlacklistDatabase, cls).__new__(cls)
+            cls._instance = super(Database, cls).__new__(cls)
         return cls._instance
 
     def __init__(self, dbname, max_connections=5):
         """
-            Initializes the IPBlacklist object.
+            Initializes the SnifferInfo object.
 
             Args:
                 dbname (str): The name of the database file.
@@ -74,7 +74,7 @@ class BlacklistDatabase:
             self.lock = Lock()
             for _ in range(max_connections):
                 self.pool.put(self.create_connection())
-            logger.info("Blacklist init")
+            logger.info("SnifferInfo init")
 
     def create_connection(self):
         """
@@ -111,10 +111,10 @@ class BlacklistDatabase:
 
     def create_table(self):
         """
-        Creates a table named 'Blacklist' in the SQLite database if it doesn't already exist.
+        Creates a table named 'SnifferInfo' in the SQLite database if it doesn't already exist.
 
         The table has the following columns:
-        - id: INTEGER (Primary Key)
+        - id: INTEGER PRIMARY KEY 
         - sip: TEXT
         - dip: TEXT
         - sport: INTEGER
@@ -127,12 +127,12 @@ class BlacklistDatabase:
         - duration: TEXT
         - count: INTEGER (Default value: 1)
         """
-        logger.info("Create table Blacklist")
+        logger.info("Create table SnifferInfo")
         conn = sqlite3.connect(self.db_name)
         try:
             cursor = conn.cursor()
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Blacklist (
+                CREATE TABLE IF NOT EXISTS SnifferInfo (
                     id INTEGER PRIMARY KEY,
                     sip TEXT,
                     dip TEXT,
@@ -147,16 +147,23 @@ class BlacklistDatabase:
                     count INTEGER DEFAULT 1
                 )
             ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS IPBlacklist (
+                    id INTEGER PRIMARY KEY,
+                    ip TEXT,
+                    time_arr TEXT,
+                    duration TEXT
+                )
+            ''')
             conn.commit()
         except sqlite3.OperationalError as e:
             logger.error(f"An error occurred while creating the table: {e}")
         finally:
             conn.close()
 
-    def blacklist_update(self, sip, dip, sport, dport, protocol, tcp_flag,
-                         timestamp, length):
+    def SnifferInfo_update(self, sip, dip, sport, dport, protocol, tcp_flag,timestamp, length):
         """
-            Update or insert a record in the Blacklist table based on the given parameters.
+            Update or insert a record in the SnifferInfo table based on the given parameters.
 
             Args:
                 sip (str): Source IP address.
@@ -171,13 +178,13 @@ class BlacklistDatabase:
             Returns:
                 None
             """
-        logger.info("Update or insert a record in the Blacklist table")
+        logger.info("Update or insert a record in the SnifferInfo table")
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
                 '''
-                    SELECT id, count FROM Blacklist
+                    SELECT id, count FROM SnifferInfo
                     WHERE sip = ? AND dip = ? AND sport = ? AND dport = ? AND protocol = ?
                 ''', (sip, dip, sport, dport, protocol))
             result = cursor.fetchone()
@@ -185,24 +192,22 @@ class BlacklistDatabase:
                 packet_id, count = result
                 cursor.execute(
                     '''
-                        UPDATE Blacklist SET count = ?, tcp_flag = ?, timestamp=? ,length = ? , time_arr = ? WHERE id = ?
+                        UPDATE SnifferInfo SET count = ?, tcp_flag = ?, timestamp=? ,length = ? , time_arr = ? WHERE id = ?
                     ''',
-                    (count + 1, tcp_flag, timestamp, length,
-                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"), packet_id))
+                    (count + 1, tcp_flag, timestamp, length, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), packet_id))
             else:
                 cursor.execute(
                     '''
-                        INSERT INTO Blacklist (sip, dip, sport, dport, protocol, tcp_flag, timestamp,length,time_arr)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
-                    ''', (sip, dip, sport, dport, protocol, tcp_flag, timestamp,
-                          length, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                        INSERT INTO SnifferInfo (sip, dip, sport, dport, protocol, tcp_flag, timestamp,length,time_arr)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (sip, dip, sport, dport, protocol, tcp_flag, timestamp,length, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
         finally:
             self.release_connection(conn)
 
-    def blacklist_update_batch(self, data):
+    def SnifferInfo_update_batch(self, data):
         """
-            Update the blacklist with a batch of data.
+            Update the SnifferInfo with a batch of data.
 
             Args:
                 data (list): A list of dictionaries containing the data to be updated.
@@ -212,7 +217,7 @@ class BlacklistDatabase:
             Returns:
                 None
             """
-        logger.info("Update the blacklist with a batch of data")
+        logger.info("Update the SnifferInfo with a batch of data")
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
@@ -223,7 +228,7 @@ class BlacklistDatabase:
                     row['length'])
                 cursor.execute(
                     '''
-                        SELECT id, count FROM Blacklist
+                        SELECT id, count FROM SnifferInfo
                         WHERE sip = ? AND dip = ? AND sport = ? AND dport = ? AND protocol = ?
                     ''', (sip, dip, sport, dport, protocol))
                 result = cursor.fetchone()
@@ -231,14 +236,14 @@ class BlacklistDatabase:
                     packet_id, count = result
                     cursor.execute(
                         '''
-                            UPDATE Blacklist SET count = ?, tcp_flag = ?, timestamp = ?, length = ?, time_arr = ? WHERE id = ?
+                            UPDATE SnifferInfo SET count = ?, tcp_flag = ?, timestamp = ?, length = ?, time_arr = ? WHERE id = ?
                         ''', (count + 1, tcp_flag, timestamp, length,
                               datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                              packet_id))
+                              packet_id,))
                 else:
                     cursor.execute(
                         '''
-                            INSERT INTO Blacklist (sip, dip, sport, dport, protocol, tcp_flag, timestamp, length, time_arr)
+                            INSERT INTO SnifferInfo (sip, dip, sport, dport, protocol, tcp_flag, timestamp, length, time_arr)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''',
                         (sip, dip, sport, dport, protocol, tcp_flag, timestamp,
@@ -247,40 +252,117 @@ class BlacklistDatabase:
         finally:
             self.release_connection(conn)
 
-    def duration_update(self):
+    def IPBlacklist_update(self, ip):
         """
-            Updates the duration of each packet in the Blacklist table based on the current time.
+        Update or insert a record in the IPBlacklist table based on the given parameters.
 
-            This method retrieves the list of packets from the Blacklist table and calculates the duration
+        Args:
+            ip (str): IP address.
+            duration (str): duration information of the IP address.
+
+        Returns:
+            None
+        """
+        logger.info("Update or insert a record in the IPBlacklist table")
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            # Check if the IP already exists
+            cursor.execute(
+                '''
+                    SELECT ip FROM IPBlacklist WHERE ip = ?
+                ''', (ip,))
+            result = cursor.fetchone()
+            if result:
+                # Update time_arr if IP exists
+                cursor.execute(
+                    '''
+                        UPDATE IPBlacklist SET  time_arr = ? WHERE ip = ?
+                    ''', (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),ip))
+            else:
+                # Insert new record if IP does not exist
+                cursor.execute(
+                    '''
+                        INSERT INTO IPBlacklist (ip, time_arr,duration) VALUES (?, ?, ?)
+                    ''', (ip, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),0))
+            conn.commit()
+        except Exception as e:
+            logger.error(f"An error occurred while updating the IPBlacklist table: {e}")
+        finally:
+            self.release_connection(conn)
+
+    def IPBlacklist_update_batch(self, data):
+        """
+        Update the IPBlacklist table with a batch of data.
+
+        Args:
+            data (list): A list of dictionaries containing the data to be updated.
+                Each dictionary should have the following keys: 'ip', 'duration'.
+
+        Returns:
+            None
+        """
+        logger.info("Update the IPBlacklist table with a batch of data")
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            for row in data:
+                ip = row['ip']  # Assuming each row is a dictionary
+                cursor.execute(
+                    '''
+                        SELECT ip FROM IPBlacklist WHERE ip = ?
+                    ''', (ip,))
+                result = cursor.fetchone()
+                if result:
+                    cursor.execute(
+                        '''
+                            UPDATE IPBlacklist SET time_arr = ? WHERE ip = ?
+                        ''', (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ip))
+                else:
+                    cursor.execute(
+                        '''
+                            INSERT INTO IPBlacklist (ip, time_arr) VALUES (?, ?)
+                        ''', (ip, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+        except Exception as e:
+            logger.error(f"An error occurred while batch updating the IPBlacklist table: {e}")
+        finally:
+            self.release_connection(conn)
+
+    def duration_update(self,table_name):
+        """
+            Updates the duration of each packet in the SnifferInfo table based on the current time.
+
+            This method retrieves the list of packets from the SnifferInfo table and calculates the duration
             for each packet by subtracting the arrival time from the current time. It then updates the
-            duration field in the Blacklist table for each packet.
+            duration field in the SnifferInfo table for each packet.
 
             Returns:
                 None
             """
-        logger.info("Update the duration of each packet in the Blacklist table")
+        logger.info("Update the duration of each packet in the %s table" % table_name)
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             now = datetime.now()
-            cursor.execute('SELECT id, time_arr FROM Blacklist')
+            # cursor.execute('SELECT id, time_arr FROM SnifferInfo')
+            cursor.execute(f'PRAGMA table_info({table_name})')
+            cursor.execute(f'SELECT id,time_arr FROM {table_name}')
             rows = cursor.fetchall()
             for row in rows:
                 packet_id, arrival_time = row
-                arrival_datetime = datetime.strptime(arrival_time,
-                                                     "%Y-%m-%d %H:%M:%S")
+                arrival_datetime = datetime.strptime(arrival_time,"%Y-%m-%d %H:%M:%S")
                 duration_in_seconds = (now - arrival_datetime).total_seconds()
                 cursor.execute(
-                    '''
-                        UPDATE Blacklist SET duration = ? WHERE id = ?
-                    ''', (duration_in_seconds, packet_id))
+                    f'UPDATE {table_name} SET duration = ? WHERE id = ?', 
+                    (duration_in_seconds, packet_id))
             conn.commit()
         finally:
             self.release_connection(conn)
 
-    def timeout_remove(self, duration_threshold):
+    def timeout_remove(self, table_name,duration_threshold):
         """
-        Delete entries in the Blacklist with a duration greater than the specified threshold.
+        Delete entries in the SnifferInfo with a duration greater than the specified threshold.
 
         Args:
             duration_threshold (int): The threshold duration in seconds.
@@ -288,92 +370,102 @@ class BlacklistDatabase:
         Returns:
             None
         """
-        logger.info(
-            "Delete entries in the Blacklist with a duration greater than %d." %
-            (duration_threshold))
+        logger.info("Delete entries in the %s table with a duration greater than %d." %(table_name,duration_threshold))
 
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
-                '''
-                DELETE FROM Blacklist WHERE CAST(duration AS INTEGER) > ?
-            ''', (duration_threshold,))
+                f'DELETE FROM {table_name} WHERE CAST(duration AS INTEGER) > ?', 
+                (duration_threshold,))
             conn.commit()
         finally:
             self.release_connection(conn)
 
-    def display(self):
+    def display(self, table_name):
         """
-        Display all IPs in the Blacklist.
+        Display all records from the specified table.
 
-        Retrieves all rows from the 'Blacklist' table and prints them in a formatted manner.
-        The format includes columns for 'id', 'sip', 'dip', 'sport', 'dport', 'protocol',
-        'tcp_flag', 'timestamp', 'length', 'time_arr', 'duration', and 'count'.
+        Retrieves all rows from the specified table and prints them in a formatted manner.
+        The format includes columns dynamically fetched from the table schema.
+
+        Args:
+            table_name (str): The name of the table to display records from.
         """
-        logger.info("Display all IPs in the Blacklist")
+        logger.info(f"Display all records from the {table_name}")
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM Blacklist')
+            cursor.execute(f'PRAGMA table_info({table_name})')
+            columns_info = cursor.fetchall()
+            column_names = [col[1] for col in columns_info]  # Extract column names
+
+            cursor.execute(f'SELECT * FROM {table_name}')
             rows = cursor.fetchall()
-            print("Display all IPs in the Blacklist:")
-            format_str = "{:<3} {:<15} {:<15} {:<6} {:<6} {:<8} {:<10} {:<20} {:<6} {:<20} {:<8} {:<5}"
-            print(
-                format_str.format("id", "sip", "dip", "sport", "dport",
-                                  "protocol", "tcp_flag", "timestamp", "length",
-                                  "time_arr", "duration", "count"))
+
+            # Create a format string dynamically based on the number of columns
+            format_str = ' '.join(["{:<15}"] * len(column_names))
+            print(format_str.format(*column_names))
+
             for row in rows:
-                formatted_row = [
-                    str(v) if v is not None else 'None' for v in row
-                ]
+                formatted_row = [str(v) if v is not None else 'None' for v in row]
                 print(format_str.format(*formatted_row))
         finally:
             self.release_connection(conn)
 
-    def delete(self, id):
+    def delete(self, table_name, id):
         """
-            Delete a record from the Blacklist table based on the given ID.
+        Delete a record from the specified table based on the given ID.
 
-            Args:
-                id (int): The ID of the record to be deleted.
+        Args:
+            table_name (str): The name of the table from which to delete the record.
+            id (int): The ID of the record to be deleted.
 
-            Returns:
-                None
+        Returns:
+            None
 
-            Raises:
-                None
-            """
-        logger.info("Delete a record from the Blacklist table")
+        Raises:
+            Exception: If an error occurs during the deletion process.
+        """
+        logger.info(f"Deleting a record from the {table_name} table")
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
-                '''
-                DELETE FROM Blacklist WHERE id = ?
-                ''', (id))
-            print("Delete successfully!")
+                f'''
+                DELETE FROM {table_name} WHERE id = ?
+                ''', (id,))
+            conn.commit()  # Make sure to commit the transaction to apply the changes
+            print("Record deleted successfully!")
+        except Exception as e:
+            logger.error(f"An error occurred while deleting a record from the {table_name} table: {e}")
+            raise e
         finally:
             self.release_connection(conn)
 
-    def id_reset(self):
+    def id_reset(self, table_name):
         """
-            Resets the ID column of the Blacklist table by creating a new table,
-            copying the data from the original table, dropping the original table,
-            and renaming the new table to Blacklist.
+        Resets the IDs in the specified table to ensure continuity. This is particularly useful after deletion
+        operations which may leave gaps in the ID sequence. The function handles tables differently based on
+        their structure: it directly resets IDs for tables with an auto-increment ID column, and it reassigns
+        IDs in a continuous sequence for tables without such a column.
 
-            This method ensures that the ID column starts from 1 and increments
-            sequentially for each record in the table.
+        Args:
+            table_name (str): The name of the table for which to reset IDs.
 
-            Returns:
-                None
-            """
-        logger.info("Reset the ID column of the Blacklist table")
+        Returns:
+            None
+        """
+        logger.info(f"Starting ID reset for the {table_name} table.")
+
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS Blacklist_new (
+            
+            if table_name == 'SnifferInfo':
+                # Handle SnifferInfo table - Assumes it has an auto-increment ID column
+                cursor.execute(f'''
+                    CREATE TABLE IF NOT EXISTS {table_name}_temp (
                         id INTEGER PRIMARY KEY,
                         sip TEXT,
                         dip TEXT,
@@ -388,26 +480,46 @@ class BlacklistDatabase:
                         count INTEGER DEFAULT 1
                     )
                 ''')
-            cursor.execute('''
-                    INSERT INTO Blacklist_new (sip, dip, sport, dport, protocol, tcp_flag, timestamp, length, time_arr, duration, count)
-                    SELECT sip, dip, sport, dport, protocol, tcp_flag, timestamp, length, time_arr, duration, count FROM Blacklist
+                cursor.execute(f'''
+                    INSERT INTO {table_name}_temp (sip, dip, sport, dport, protocol, tcp_flag, timestamp, length, time_arr, duration, count)
+                    SELECT sip, dip, sport, dport, protocol, tcp_flag, timestamp, length, time_arr, duration, count FROM {table_name}
                 ''')
-            cursor.execute('DROP TABLE Blacklist')
-            cursor.execute('ALTER TABLE Blacklist_new RENAME TO Blacklist')
+            elif table_name == 'IPBlacklist':
+                cursor.execute(f'''
+                    CREATE TABLE IF NOT EXISTS {table_name}_temp (
+                        id INTEGER PRIMARY KEY,
+                        ip TEXT,
+                        time_arr TEXT,
+                        duration TEXT
+                    );
+                ''')
+                # 直接复制数据，id 将自动处理
+                cursor.execute(f'''
+                    INSERT INTO {table_name}_temp (ip, time_arr, duration)
+                    SELECT ip, time_arr, duration FROM {table_name};
+                ''')
+            else:
+                logger.error(f"Table {table_name} is not recognized for ID reset.")
+                return
+            
+            # Drop the original table and rename the temporary table
+            cursor.execute(f'DROP TABLE {table_name};')
+            cursor.execute(f'ALTER TABLE {table_name}_temp RENAME TO {table_name};')
             conn.commit()
+            logger.info(f"ID reset completed for the {table_name} table.")
         except Exception as e:
-            logger.error(f"An error occurred: {e}")
+            logger.error(f"An error occurred during ID reset for {table_name}: {e}")
         finally:
             self.release_connection(conn)
 
-    def clear(self):
+    def clear(self,table_name):
         """
             Clears all data from the tables in the database.
 
             Raises:
                 sqlite3.Error: If an error occurs while clearing the tables.
             """
-        logger.info("Clear all data from the tables in the database")
+        logger.info(f"Clear all data from the {table_name}tables in the database")
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
@@ -421,7 +533,7 @@ class BlacklistDatabase:
         except sqlite3.Error as e:
             logger.error(f"An error occurred: {e}")
         finally:
-            conn.release_connection()
+            self.release_connection(conn)
 
     def close(self):
         """
@@ -433,7 +545,6 @@ class BlacklistDatabase:
         while not self.pool.empty():
             conn = self.pool.get()
             conn.close()
-
 
 class CSVHandler:
     """
@@ -455,6 +566,7 @@ class CSVHandler:
         self.target_dir = writepath
         self.encoding = encodetype
 
+
         if not os.path.exists(readpath):
             logger.info(f"The directory does not exist: " + readpath)
             os.makedirs(readpath)
@@ -462,7 +574,8 @@ class CSVHandler:
         if not os.path.exists(writepath):
             logger.info(f"The directory does not exist: " + writepath)
             os.makedirs(writepath)
-
+            
+          
     def csv_read_and_move(self):
         """
         Reads the CSV files from the specified directory, processes the data, and moves the files to the target directory.
@@ -478,14 +591,12 @@ class CSVHandler:
         for file_path in csv_files:
             try:
                 with open(file_path, mode='r', encoding=self.encoding) as file:
-                    reader = csv.reader(file)
+                    reader = csv.reader(file) 
                     for row in reader:
-                        # parts = row[0].split(',')
-                        # sip, dip, sport, dport, protocol, tcp_flag, timestamp, length = parts
-                        # sport = int(sport)
-                        # dport = int(dport)
-                        (sip, dip, sport, dport, protocol, tcp_flag, timestamp,
-                         length) = row
+                        parts = row[0].split(',')
+                        sip, dip, sport, dport, protocol, tcp_flag, timestamp, length = parts
+                        sport = int(sport)
+                        dport = int(dport)
                         record = {
                             'sip':
                                 sip,
@@ -518,3 +629,117 @@ class CSVHandler:
             )
 
         return data
+
+
+if __name__ == "__main__":
+    'Create a Database instance'
+    # db = Database("database.db")
+
+    'Create the SnifferInfo table if it doesnt exist'
+    # db.create_table()
+    # print("display Sniffer table")
+    # db.display("SnifferInfo")
+    # print("display IPBlacklist table")
+    # db.display("IPblacklist")
+    
+    
+    'Read the CSV files, process the data, and move the files to the target directory'
+    # csv_handler = CSVHandler(Config.readinfo_path,Config.writeinfo_path,Config.encoding)
+    # processed_data = csv_handler.csv_read_and_move()
+
+    'Update or insert a record in the SnifferInfo table'
+    # print("display SnifferInfo_update")
+    # db.SnifferInfo_update("192.1.0.1", "192.18.0.2", 1234, 5678, "TCP", 1, "2022-01-01 00:00:00", 100)
+    # db.display("SnifferInfo")
+
+    'Update the SnifferInfo table with a batch of data'
+    # print("display SnifferInfo_update_batch")
+    # db.SnifferInfo_update_batch(processed_data)
+    # db.display("SnifferInfo")
+    
+    'Update or insert a record in the IPBlacklist table'
+    # db.IPBlacklist_update("192.16.0.1")
+    # print("display ipblacklist_update")
+    # db.display("IPBlacklist")
+
+    'Update the IPBlacklist table with a batch of data'
+    # blacklist_data = [
+    #     {"ip": "199.1.0.2"},
+    #     {"ip": "190.2.0.3"},
+    #     {"ip": "192.1.0.2"},
+    # ]   
+    # print("display ipblacklist_update_batch")
+    # print("before")
+    # db.display("IPBlacklist")
+    # db.IPBlacklist_update_batch(blacklist_data)
+    # print("after")
+    # db.display("IPBlacklist")
+    
+    'Update the duration of each packet in the SnifferInfo table'
+    # print("update snifferinfo duration")
+    # print("before")   
+    # db.display("SnifferInfo")
+    # db.duration_update("SnifferInfo")
+    # print("after")
+    # db.display("SnifferInfo")
+
+    'Delete entries in the SnifferInfo table with a duration greater than x seconds'
+    # print("remove snifferinfo timeout")
+    # print("before") 
+    # db.display("SnifferInfo")
+    # db.timeout_remove("SnifferInfo", 10)
+    # print("after")
+    # db.display("SnifferInfo")
+    
+    'Update the duration of each packet in the IPBlacklist table'
+    # print("update IPBlacklist duration")
+    # print("before")   
+    # db.display("IPBlacklist")
+    # db.duration_update("IPBlacklist")
+    # print("after")
+    # db.display("IPBlacklist")
+
+    'Delete entries in the SnifferInfo table with a duration greater than 20 seconds'
+    # print("remove IPBlacklist timeout")
+    # print("before") 
+    # db.display("IPBlacklist")
+    # db.timeout_remove("IPBlacklist", 20)
+    # print("after")
+    # db.display("IPBlacklist")
+
+    'resort snifferinfo id'
+    # print("reset SnifferInfo id")
+    # print("before") 
+    # db.display("SnifferInfo")
+    # db.id_reset("SnifferInfo")
+    # print("after")
+    # db.display("SnifferInfo")
+    
+    'resort ipblacklist id'
+    # print("reset IPBlacklist id")
+    # print("before") 
+    # db.display("IPBlacklist")
+    # db.id_reset("IPBlacklist")
+    # print("after")
+    # db.display("IPBlacklist")
+    
+    'clear table snifferinfo'
+    # print("clear SnifferInfo")
+    # print("before") 
+    # db.display("SnifferInfo")
+    # db.clear("SnifferInfo")
+    # print("after")
+    # db.display("SnifferInfo")
+     
+    'clear table ipblacklist'
+    # print("clear IPBlacklist")
+    # print("before") 
+    # db.display("IPBlacklist")
+    # db.clear("IPBlacklist")
+    # print("after")
+    # db.display("IPBlacklist")
+    
+    
+    'Close all connections in the pool'
+    # db.close()
+
