@@ -20,8 +20,11 @@ class SAVAPacketSniffer:
         sniffer_receive: Writes the sniffer data to a CSV file.
     """
 
-    def __init__(self):
-        self.sniffer_file_name = Config.name
+    def __init__(self, name=None):
+        if name is None:
+            self.sniffer_file_name = "sniffer_data.csv"
+        else:
+            self.sniffer_file_name = name
         self.sinffer_read_path = Config.readinfo_path
 
     def sniffer_receive(self, sniffer_data):
@@ -50,7 +53,7 @@ class DDoS:
         self.threshold = Config.threshold
         self.rule_issuance = IssueRules()
 
-    def detect_ddos(self, data):
+    async def detect_ddos(self, data):
         """
         Detects a DDoS attack.
 
