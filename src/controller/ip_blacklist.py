@@ -161,7 +161,8 @@ class Database:
         finally:
             conn.close()
 
-    def SnifferInfo_update(self, sip, dip, sport, dport, protocol, tcp_flag,timestamp, length):
+    def SnifferInfo_update(self, sip, dip, sport, dport, protocol, tcp_flag,
+                           timestamp, length):
         """
             Update or insert a record in the SnifferInfo table based on the given parameters.
 
@@ -194,13 +195,15 @@ class Database:
                     '''
                         UPDATE SnifferInfo SET count = ?, tcp_flag = ?, timestamp=? ,length = ? , time_arr = ? WHERE id = ?
                     ''',
-                    (count + 1, tcp_flag, timestamp, length, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), packet_id))
+                    (count + 1, tcp_flag, timestamp, length,
+                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"), packet_id))
             else:
                 cursor.execute(
                     '''
                         INSERT INTO SnifferInfo (sip, dip, sport, dport, protocol, tcp_flag, timestamp,length,time_arr)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (sip, dip, sport, dport, protocol, tcp_flag, timestamp,length, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                    ''', (sip, dip, sport, dport, protocol, tcp_flag, timestamp,
+                          length, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
         finally:
             self.release_connection(conn)
@@ -237,9 +240,14 @@ class Database:
                     cursor.execute(
                         '''
                             UPDATE SnifferInfo SET count = ?, tcp_flag = ?, timestamp = ?, length = ?, time_arr = ? WHERE id = ?
-                        ''', (count + 1, tcp_flag, timestamp, length,
-                              datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                              packet_id,))
+                        ''', (
+                            count + 1,
+                            tcp_flag,
+                            timestamp,
+                            length,
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            packet_id,
+                        ))
                 else:
                     cursor.execute(
                         '''
@@ -278,16 +286,17 @@ class Database:
                 cursor.execute(
                     '''
                         UPDATE IPBlacklist SET  time_arr = ? WHERE ip = ?
-                    ''', (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),ip))
+                    ''', (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ip))
             else:
                 # Insert new record if IP does not exist
                 cursor.execute(
                     '''
                         INSERT INTO IPBlacklist (ip, time_arr,duration) VALUES (?, ?, ?)
-                    ''', (ip, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),0))
+                    ''', (ip, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 0))
             conn.commit()
         except Exception as e:
-            logger.error(f"An error occurred while updating the IPBlacklist table: {e}")
+            logger.error(
+                f"An error occurred while updating the IPBlacklist table: {e}")
         finally:
             self.release_connection(conn)
 
@@ -325,11 +334,13 @@ class Database:
                         ''', (ip, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
         except Exception as e:
-            logger.error(f"An error occurred while batch updating the IPBlacklist table: {e}")
+            logger.error(
+                f"An error occurred while batch updating the IPBlacklist table: {e}"
+            )
         finally:
             self.release_connection(conn)
 
-    def duration_update(self,table_name):
+    def duration_update(self, table_name):
         """
             Updates the duration of each packet in the SnifferInfo table based on the current time.
 
@@ -340,7 +351,8 @@ class Database:
             Returns:
                 None
             """
-        logger.info("Update the duration of each packet in the %s table" % table_name)
+        logger.info("Update the duration of each packet in the %s table" %
+                    table_name)
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
@@ -351,16 +363,17 @@ class Database:
             rows = cursor.fetchall()
             for row in rows:
                 packet_id, arrival_time = row
-                arrival_datetime = datetime.strptime(arrival_time,"%Y-%m-%d %H:%M:%S")
+                arrival_datetime = datetime.strptime(arrival_time,
+                                                     "%Y-%m-%d %H:%M:%S")
                 duration_in_seconds = (now - arrival_datetime).total_seconds()
                 cursor.execute(
-                    f'UPDATE {table_name} SET duration = ? WHERE id = ?', 
+                    f'UPDATE {table_name} SET duration = ? WHERE id = ?',
                     (duration_in_seconds, packet_id))
             conn.commit()
         finally:
             self.release_connection(conn)
 
-    def timeout_remove(self, table_name,duration_threshold):
+    def timeout_remove(self, table_name, duration_threshold):
         """
         Delete entries in the SnifferInfo with a duration greater than the specified threshold.
 
@@ -370,13 +383,15 @@ class Database:
         Returns:
             None
         """
-        logger.info("Delete entries in the %s table with a duration greater than %d." %(table_name,duration_threshold))
+        logger.info(
+            "Delete entries in the %s table with a duration greater than %d." %
+            (table_name, duration_threshold))
 
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
-                f'DELETE FROM {table_name} WHERE CAST(duration AS INTEGER) > ?', 
+                f'DELETE FROM {table_name} WHERE CAST(duration AS INTEGER) > ?',
                 (duration_threshold,))
             conn.commit()
         finally:
@@ -398,7 +413,8 @@ class Database:
             cursor = conn.cursor()
             cursor.execute(f'PRAGMA table_info({table_name})')
             columns_info = cursor.fetchall()
-            column_names = [col[1] for col in columns_info]  # Extract column names
+            column_names = [col[1] for col in columns_info
+                           ]  # Extract column names
 
             cursor.execute(f'SELECT * FROM {table_name}')
             rows = cursor.fetchall()
@@ -408,7 +424,9 @@ class Database:
             print(format_str.format(*column_names))
 
             for row in rows:
-                formatted_row = [str(v) if v is not None else 'None' for v in row]
+                formatted_row = [
+                    str(v) if v is not None else 'None' for v in row
+                ]
                 print(format_str.format(*formatted_row))
         finally:
             self.release_connection(conn)
@@ -435,10 +453,13 @@ class Database:
                 f'''
                 DELETE FROM {table_name} WHERE id = ?
                 ''', (id,))
-            conn.commit()  # Make sure to commit the transaction to apply the changes
+            conn.commit(
+            )  # Make sure to commit the transaction to apply the changes
             print("Record deleted successfully!")
         except Exception as e:
-            logger.error(f"An error occurred while deleting a record from the {table_name} table: {e}")
+            logger.error(
+                f"An error occurred while deleting a record from the {table_name} table: {e}"
+            )
             raise e
         finally:
             self.release_connection(conn)
@@ -461,7 +482,7 @@ class Database:
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
-            
+
             if table_name == 'SnifferInfo':
                 # Handle SnifferInfo table - Assumes it has an auto-increment ID column
                 cursor.execute(f'''
@@ -499,27 +520,31 @@ class Database:
                     SELECT ip, time_arr, duration FROM {table_name};
                 ''')
             else:
-                logger.error(f"Table {table_name} is not recognized for ID reset.")
+                logger.error(
+                    f"Table {table_name} is not recognized for ID reset.")
                 return
-            
+
             # Drop the original table and rename the temporary table
             cursor.execute(f'DROP TABLE {table_name};')
-            cursor.execute(f'ALTER TABLE {table_name}_temp RENAME TO {table_name};')
+            cursor.execute(
+                f'ALTER TABLE {table_name}_temp RENAME TO {table_name};')
             conn.commit()
             logger.info(f"ID reset completed for the {table_name} table.")
         except Exception as e:
-            logger.error(f"An error occurred during ID reset for {table_name}: {e}")
+            logger.error(
+                f"An error occurred during ID reset for {table_name}: {e}")
         finally:
             self.release_connection(conn)
 
-    def clear(self,table_name):
+    def clear(self, table_name):
         """
             Clears all data from the tables in the database.
 
             Raises:
                 sqlite3.Error: If an error occurs while clearing the tables.
             """
-        logger.info(f"Clear all data from the {table_name}tables in the database")
+        logger.info(
+            f"Clear all data from the {table_name}tables in the database")
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
@@ -546,6 +571,7 @@ class Database:
             conn = self.pool.get()
             conn.close()
 
+
 class CSVHandler:
     """
     A class that handles reading CSV files, processing the data, and moving the files to a target directory.
@@ -566,7 +592,6 @@ class CSVHandler:
         self.target_dir = writepath
         self.encoding = encodetype
 
-
         if not os.path.exists(readpath):
             logger.info(f"The directory does not exist: " + readpath)
             os.makedirs(readpath)
@@ -574,8 +599,7 @@ class CSVHandler:
         if not os.path.exists(writepath):
             logger.info(f"The directory does not exist: " + writepath)
             os.makedirs(writepath)
-            
-          
+
     def csv_read_and_move(self):
         """
         Reads the CSV files from the specified directory, processes the data, and moves the files to the target directory.
@@ -591,7 +615,7 @@ class CSVHandler:
         for file_path in csv_files:
             try:
                 with open(file_path, mode='r', encoding=self.encoding) as file:
-                    reader = csv.reader(file) 
+                    reader = csv.reader(file)
                     for row in reader:
                         parts = row[0].split(',')
                         sip, dip, sport, dport, protocol, tcp_flag, timestamp, length = parts
@@ -634,112 +658,94 @@ class CSVHandler:
 if __name__ == "__main__":
     'Create a Database instance'
     # db = Database("database.db")
-
     'Create the SnifferInfo table if it doesnt exist'
     # db.create_table()
     # print("display Sniffer table")
     # db.display("SnifferInfo")
     # print("display IPBlacklist table")
     # db.display("IPblacklist")
-    
-    
     'Read the CSV files, process the data, and move the files to the target directory'
     # csv_handler = CSVHandler(Config.readinfo_path,Config.writeinfo_path,Config.encoding)
     # processed_data = csv_handler.csv_read_and_move()
-
     'Update or insert a record in the SnifferInfo table'
     # print("display SnifferInfo_update")
     # db.SnifferInfo_update("192.1.0.1", "192.18.0.2", 1234, 5678, "TCP", 1, "2022-01-01 00:00:00", 100)
     # db.display("SnifferInfo")
-
     'Update the SnifferInfo table with a batch of data'
     # print("display SnifferInfo_update_batch")
     # db.SnifferInfo_update_batch(processed_data)
     # db.display("SnifferInfo")
-    
     'Update or insert a record in the IPBlacklist table'
     # db.IPBlacklist_update("192.16.0.1")
     # print("display ipblacklist_update")
     # db.display("IPBlacklist")
-
     'Update the IPBlacklist table with a batch of data'
     # blacklist_data = [
     #     {"ip": "199.1.0.2"},
     #     {"ip": "190.2.0.3"},
     #     {"ip": "192.1.0.2"},
-    # ]   
+    # ]
     # print("display ipblacklist_update_batch")
     # print("before")
     # db.display("IPBlacklist")
     # db.IPBlacklist_update_batch(blacklist_data)
     # print("after")
     # db.display("IPBlacklist")
-    
     'Update the duration of each packet in the SnifferInfo table'
     # print("update snifferinfo duration")
-    # print("before")   
+    # print("before")
     # db.display("SnifferInfo")
     # db.duration_update("SnifferInfo")
     # print("after")
     # db.display("SnifferInfo")
-
     'Delete entries in the SnifferInfo table with a duration greater than x seconds'
     # print("remove snifferinfo timeout")
-    # print("before") 
+    # print("before")
     # db.display("SnifferInfo")
     # db.timeout_remove("SnifferInfo", 10)
     # print("after")
     # db.display("SnifferInfo")
-    
     'Update the duration of each packet in the IPBlacklist table'
     # print("update IPBlacklist duration")
-    # print("before")   
+    # print("before")
     # db.display("IPBlacklist")
     # db.duration_update("IPBlacklist")
     # print("after")
     # db.display("IPBlacklist")
-
     'Delete entries in the SnifferInfo table with a duration greater than 20 seconds'
     # print("remove IPBlacklist timeout")
-    # print("before") 
+    # print("before")
     # db.display("IPBlacklist")
     # db.timeout_remove("IPBlacklist", 20)
     # print("after")
     # db.display("IPBlacklist")
-
     'resort snifferinfo id'
     # print("reset SnifferInfo id")
-    # print("before") 
+    # print("before")
     # db.display("SnifferInfo")
     # db.id_reset("SnifferInfo")
     # print("after")
     # db.display("SnifferInfo")
-    
     'resort ipblacklist id'
     # print("reset IPBlacklist id")
-    # print("before") 
+    # print("before")
     # db.display("IPBlacklist")
     # db.id_reset("IPBlacklist")
     # print("after")
     # db.display("IPBlacklist")
-    
     'clear table snifferinfo'
     # print("clear SnifferInfo")
-    # print("before") 
+    # print("before")
     # db.display("SnifferInfo")
     # db.clear("SnifferInfo")
     # print("after")
     # db.display("SnifferInfo")
-     
     'clear table ipblacklist'
     # print("clear IPBlacklist")
-    # print("before") 
+    # print("before")
     # db.display("IPBlacklist")
     # db.clear("IPBlacklist")
     # print("after")
     # db.display("IPBlacklist")
-    
-    
     'Close all connections in the pool'
     # db.close()
-

@@ -3,7 +3,7 @@ import asyncio
 from controller import TransportServer
 from config import Config
 from rule_issuance import IssueRules
-from ip_blacklist import CSVHandler, BlacklistDatabase
+from ip_blacklist import CSVHandler, Database
 from log import get_logger
 from pyfiglet import Figlet
 
@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 # Create a server instance and all the devices will connect to this
 server = TransportServer(Config.controller_ip, Config.controller_port)
 issue_rules = IssueRules(server)
-ip_blacklist = BlacklistDatabase(Config.db_path)
+ip_blacklist = Database(Config.db_path)
 
 
 async def transport_server():
