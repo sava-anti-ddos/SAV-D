@@ -17,6 +17,9 @@ clean:
 	@echo "Cleaning the project..."
 # remove _pycache_ files
 	@find . -name "__pycache__" -type d -exec rm -rf {} \;
+	@rm -rf /tmp/upload*
+	@rm -rf /tmp/sniffer*
+	@rm -rf blacklist.db
 
 # Target: run
 # Description: Run the project.
