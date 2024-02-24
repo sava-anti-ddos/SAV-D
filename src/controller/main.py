@@ -25,7 +25,7 @@ async def transport_server():
     await server.start_server()
 
 
-async def issue_rules_main(rules):
+async def issue_rules_from_blacklist_main():
     """
     Main function to start the issue rules process.
     """
@@ -39,7 +39,7 @@ async def issue_rules_main(rules):
             rule_generator.launch()
             data = rule_generator.generate_rules("IPBlacklist")
             logger.debug("blacklist rules extract")
-            # await issue_rules.send_rules(data)
+            await issue_rules.send_rules(data)
             logger.debug(data)
             rule_generator.shutdown()
         except Exception as e:
@@ -66,7 +66,7 @@ async def sniffer_csv_file_store2db_main():
 async def main():
     logger.info("Starting main")
     server_task = asyncio.create_task(transport_server())
-    rules_task = asyncio.create_task(issue_rules_main([]))
+    rules_task = asyncio.create_task(issue_rules_from_blacklist_main())
     csv_store_task = asyncio.create_task(sniffer_csv_file_store2db_main())
     await asyncio.gather(
         server_task,

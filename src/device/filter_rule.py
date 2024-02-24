@@ -22,4 +22,4 @@ class FilterRule:
         logger.info('Applying rule to the local firewall')
         ipt = IPTableHelper()
         for line in rules:
-            ipt.block_src_dst_ip(line[0], line[1])
+            ipt.block_src_ip(line)
