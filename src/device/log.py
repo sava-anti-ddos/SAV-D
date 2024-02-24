@@ -1,5 +1,8 @@
 import logging
 import os
+from datetime import datetime
+
+now = datetime.now()
 
 
 class Log:
@@ -8,9 +11,9 @@ class Log:
         self.logger = self.setup_logging(name)
 
     def setup_logging(self, name):
-        log_file = os.path.join('/var/log/', 'savd_device.log')
-
-        debug_log_file = os.path.join('/var/log/', 'savd_device_debug.log')
+        log_file = os.path.join('/var/log/', f'savd_device_{now}.log')
+        debug_log_file = os.path.join('/var/log/',
+                                      f'savd_device_debug_{now}.log')
 
         logger = logging.getLogger(name)
         logger.setLevel(logging.DEBUG)
