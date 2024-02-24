@@ -70,12 +70,11 @@ if __name__ == "__main__":
             logger.info(f"Sniffer at interface: " + Config.sniffer_interface)
             sniffer = PacketSniffer(Interface=Config.sniffer_interface,
                                     Config=Config)
+            # SAVA device start sinffer
+            sniffer.start()
         else:
             logger.info(f"Do not Sniffer")
             # sniffer = PacketSniffer(Config=Config)
-
-        # SAVA device start sinffer
-        sniffer.start()
 
     # Start the SAVA device
     logger.info("Starting SAVA device")
