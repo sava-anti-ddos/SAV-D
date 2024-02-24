@@ -4,6 +4,7 @@ from controller import TransportServer
 from config import Config
 from rule_issuance import IssueRules
 from ip_blacklist import CSVHandler, Database
+from filter_rule_generation import RuleGenerator
 from log import get_logger
 from pyfiglet import Figlet
 
@@ -12,7 +13,8 @@ logger = get_logger(__name__)
 # Create a server instance and all the devices will connect to this
 server = TransportServer(Config.controller_ip, Config.controller_port)
 issue_rules = IssueRules(server)
-ip_blacklist = Database(Config.db_path)
+db = Database(Config.db_path)
+rule_generator = RuleGenerator(db)
 
 
 async def transport_server():
@@ -28,12 +30,20 @@ async def issue_rules_main(rules):
     Main function to start the issue rules process.
     """
     logger.info("Starting issue rules main")
-    # while True:
-    #     try:
-    #         await asyncio.sleep(15)
-    #         await issue_rules.send_rules(rules)
-    #     except Exception as e:
-    #         logger.error(f"Error in issue_rules_main: {e}")
+
+    while True:
+        try:
+            await asyncio.sleep(15)
+            logger.info("generating rules from blacklist")
+            rule_generator.set_info()
+            rule_generator.launch()
+            data = rule_generator.generate_rules("IPBlacklist")
+            logger.debug("blacklist rules extract")
+            # await issue_rules.send_rules(data)
+            logger.debug(data)
+            rule_generator.shutdown()
+        except Exception as e:
+            logger.error(f"Error in issue_rules_main: {e}")
 
 
 async def sniffer_csv_file_store2db_main():
@@ -48,7 +58,7 @@ async def sniffer_csv_file_store2db_main():
                                      Config.writeinfo_path, Config.encoding)
             data = csv_handler.csv_read_and_move()
             if data:
-                ip_blacklist.blacklist_update_batch(data)
+                db.ip_blacklist_update_batch(data)
         except Exception as e:
             logger.error(f"Error in sniffer_csv_file_store2db_main: {e}")
 

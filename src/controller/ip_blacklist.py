@@ -161,8 +161,8 @@ class Database:
         finally:
             conn.close()
 
-    def SnifferInfo_update(self, sip, dip, sport, dport, protocol, tcp_flag,
-                           timestamp, length):
+    def sniffer_info_update(self, sip, dip, sport, dport, protocol, tcp_flag,
+                            timestamp, length):
         """
             Update or insert a record in the SnifferInfo table based on the given parameters.
 
@@ -208,7 +208,7 @@ class Database:
         finally:
             self.release_connection(conn)
 
-    def SnifferInfo_update_batch(self, data):
+    def sniffer_info_update_batch(self, data):
         """
             Update the SnifferInfo with a batch of data.
 
@@ -260,7 +260,7 @@ class Database:
         finally:
             self.release_connection(conn)
 
-    def IPBlacklist_update(self, ip):
+    def ip_blacklist_update(self, ip):
         """
         Update or insert a record in the IPBlacklist table based on the given parameters.
 
@@ -300,7 +300,7 @@ class Database:
         finally:
             self.release_connection(conn)
 
-    def IPBlacklist_update_batch(self, data):
+    def ip_blacklist_update_batch(self, data):
         """
         Update the IPBlacklist table with a batch of data.
 
