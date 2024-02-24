@@ -58,7 +58,7 @@ async def sniffer_csv_file_store2db_main():
                                      Config.writeinfo_path, Config.encoding)
             data = csv_handler.csv_read_and_move()
             if data:
-                db.ip_blacklist_update_batch(data)
+                db.sniffer_info_update_batch(data)
         except Exception as e:
             logger.error(f"Error in sniffer_csv_file_store2db_main: {e}")
 
@@ -73,6 +73,13 @@ async def main():
         rules_task,
         csv_store_task,
     )
+
+
+def db_init():
+    # db initialization
+    db.create_table()
+    # lab blacklist ip
+    db.ip_blacklist_update('40.40.10.10')
 
 
 def banner():
@@ -93,5 +100,6 @@ def banner():
 
 if __name__ == "__main__":
     banner()
+    db_init()
     # Start the SAVD controller
     asyncio.run(main())

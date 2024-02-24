@@ -34,7 +34,7 @@ class SAVAPacketSniffer:
         Args:
             sniffer_data (list): List of rows to be written to the CSV file.
         """
-        logger.info("Writing sniffer data to file")
+        logger.info("sniffer_receive function: Writing data to file")
         store_file = os.path.join(self.sinffer_read_path,
                                   self.sniffer_file_name)
         with open(store_file, "a", newline='') as file:
@@ -68,6 +68,7 @@ class DDoS:
             (sip, dip, sport, dport, protocol, flags, timestamp, length) = row
             # Check if the packet is part of a DDoS attack
             self.count_array[timestamp] += 1
+            logger.debug(f"Count array: {self.count_array}")
             for key in self.count_array:
                 self.baseline[(sip, dip)] += self.count_array[key]
                 if timestamp - key > 60:
