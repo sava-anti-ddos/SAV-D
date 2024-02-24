@@ -26,7 +26,6 @@ class RuleGenerator:
     # Used to request a connection from the database
     def launch(self):
         self.connection = self.db.get_connection()
-        print("Connection opened")
 
     #用于向数据库根据规则提取数据，并返回相关数据
     # Used to extract data from the database based on rules and return relevant data
