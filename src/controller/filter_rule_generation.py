@@ -64,7 +64,7 @@ class RuleGenerator:
     def shutdown(self):
         self.conn = None
         self.db.release_connection(self.connection)
-        print("Connection closed")
+        logger.debug("Connection closed")
 
 
 if __name__ == "__main__":
