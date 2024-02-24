@@ -15,11 +15,11 @@ all:
 # Description: Clean the project by removing all generated files.
 clean:
 	@echo "Cleaning the project..."
-# remove _pycache_ files
-	@find . -name "__pycache__" -type d -exec rm -rf {} \;
+	@rm -rf src/controller/__pycache__
+	@rm -rf src/device/__pycache__
 	@rm -rf /tmp/upload*
 	@rm -rf /tmp/sniffer*
-	@rm -rf blacklist.db
+	@rm -rf /tmp/blacklist.db
 
 # Target: run
 # Description: Run the project.
