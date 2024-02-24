@@ -4,4 +4,4 @@ scapy
 aiofiles
 sphinx
 linuxnet-iptables
-diskcache
+pyfiglet
