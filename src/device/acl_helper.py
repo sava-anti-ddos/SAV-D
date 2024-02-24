@@ -25,6 +25,7 @@ class IPTableHelper:
         self.table = IptablesPacketFilterTable('filter')
         self.table.read_system_config()
         self.input_chain = self.table.get_chain('INPUT')
+        self.forward_chain = self.table.get_chain('FORWARD')
 
     def block_src_ip(self, src_ip):
         """
@@ -37,6 +38,7 @@ class IPTableHelper:
         rule = ChainRule(match=match_src_ip, target=Targets.DROP)
         logger.debug(rule.to_iptables_args)
         self.input_chain.append_rule(rule)
+        self.forward_chain.append_rule(rule)
 
     def block_dst_ip(self, dst_ip):
         """
@@ -49,6 +51,7 @@ class IPTableHelper:
         rule = ChainRule(match=match_dst_ip, target=Targets.DROP)
         logger.debug(rule.to_iptables_args)
         self.input_chain.append_rule(rule)
+        self.forward_chain.append_rule(rule)
 
     def block_src_dst_ip(self, src_ip, dst_ip):
         """
@@ -63,6 +66,7 @@ class IPTableHelper:
         rule = ChainRule(match=match_src_dst_ip, target=Targets.DROP)
         logger.debug(rule.to_iptables_args)
         self.input_chain.append_rule(rule)
+        self.forward_chain.append_rule(rule)
 
     def block_tcp_packet(self,
                          src_port=None,
@@ -93,6 +97,7 @@ class IPTableHelper:
                          target=Targets.DROP)
         logger.debug(rule.to_iptables_args)
         self.input_chain.append_rule(rule)
+        self.forward_chain.append_rule(rule)
 
     def block_udp_packet(self, src_port=None, dest_port=None):
         """
@@ -113,6 +118,7 @@ class IPTableHelper:
                          target=Targets.DROP)
         logger.debug(rule.to_iptables_args)
         self.input_chain.append_rule(rule)
+        self.forward_chain.append_rule(rule)
 
     def flush(self):
         """
@@ -120,6 +126,7 @@ class IPTableHelper:
         """
         logger.debug("flush chain, remove all rules")
         self.input_chain.flush()
+        self.forward_chain.flush()
 
 
 if __name__ == '__main__':
