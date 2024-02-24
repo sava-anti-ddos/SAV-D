@@ -71,8 +71,8 @@ if __name__ == "__main__":
             sniffer = PacketSniffer(Interface=Config.sniffer_interface,
                                     Config=Config)
         else:
-            logger.info(f"Sniffer at all interfaces")
-            sniffer = PacketSniffer(Config=Config)
+            logger.info(f"Do not Sniffer")
+            # sniffer = PacketSniffer(Config=Config)
 
         # SAVA device start sinffer
         sniffer.start()
