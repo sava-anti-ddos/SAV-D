@@ -50,7 +50,9 @@ class DDoS:
     def __init__(self):
         self.baseline = {}
         self.count_array = {}
-        self.last_packet_timestamp = 0
+        self.window_left = 0
+        self.window_right = 0
+        self.window_interval = 0
         self.threshold = Config.threshold
         self.rule_issuance = IssueRules()
 
@@ -69,32 +71,41 @@ class DDoS:
             for row in data:
                 (sip, dip, sport, dport, protocol, flags, timestamp,
                  length) = row
-                if timestamp > self.last_packet_timestamp:
-                    self.last_packet_timestamp = timestamp
+
+                if self.window_left == 0:
+                    self.window_left = timestamp
+
+                if timestamp > self.window_right:
+                    self.window_right = timestamp
+
                 if not sip or not dip:
                     continue
                 # Check if the packet is part of a DDoS attack
-                if (sip, dip, timestamp) not in self.count_array:
+                if (sip, dip, timestamp) not in self.count_array.keys():
                     self.count_array[(sip, dip, timestamp)] = 0
                 self.count_array[(sip, dip, timestamp)] += 1
-
-                if (sip, dip, timestamp - 10) not in self.count_array:
-                    self.count_array[(sip, dip, timestamp - 10)] = 0
-                self.count_array[(sip, dip, timestamp - 10)] -= 1
 
             logger.debug(f"Count array: {self.count_array}")
 
             for key in self.count_array.keys():
                 (sip, dip, t) = key
+                # clean up the count array
+                if t < self.window_left:
+                    del self.count_array[key]
+                    continue
                 if (sip, dip) not in self.baseline:
                     self.baseline[(sip, dip)] = 0
 
-                if t > self.last_packet_timestamp - 10:
-                    self.baseline[(sip, dip)] += self.count_array[key]
+                self.baseline[(sip, dip)] += self.count_array[key]
 
             for key in self.baseline.keys():
                 if self.baseline[key] > self.threshold:
                     logger.info(f"DDoS attack detected from {sip} to {dip}")
                     self.rule_issuance.send_rules([sip])
+            # reset the window
+            self.window_interval = self.window_right - self.window_left
+            self.window_left = self.window_right
+            # reset the baseline
+            self.baseline = {}
         except Exception as e:
             logger.error(f"Error in detect_ddos: {e}")
