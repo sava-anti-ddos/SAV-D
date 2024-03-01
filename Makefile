@@ -26,6 +26,23 @@ clean:
 run:
 	@echo "Running the project..."
 
+# Target: run_savd_controller
+# Description: Run the savd controller.
+run_savd_controller:
+	@echo "Running the savd controller..."
+	@sudo python3 src/controller/main.py
+
+# Target: run_savd_device
+# Description: Run the savd device.
+run_r2:
+	@echo "Running the savd r2 device..."
+	@sudo python3 src/device/main.py --mode=sava --config-file=labs/r2_config.ini
+
+run_r6:
+	@echo "Running the savd r6 device..."
+	@sudo python3 src/device/main.py --mode=sava --config-file=labs/r6_config.ini
+
+
 # Target: install
 # Description: Install the project.
 install:
@@ -46,7 +63,7 @@ deps:
 	
 # install python3
 	@echo -e "\033[32mInstalling python3 enviornment\033[0m"
-	sudo apt install python3 python-is-python3 python3-pip -y
+	sudo apt install python3 python-is-python3 python3-pip python3-dev -y
 
 # install mininet
 	@echo -e "\033[32mInstalling mininet enviornment\033[0m"
