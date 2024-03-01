@@ -161,6 +161,14 @@ class IPTableHelper:
         except Exception as e:
             logger.error(f"Error in block_udp_packet: {e}")
 
+    def get_forward_chain_rule_src_ip(self):
+        src_ip = []
+        rules = self.forward_chain.get_rules()
+        for rule in rules:
+            rule_str = rule.to_iptables_args()
+            src_ip.append(rule_str)
+        return src_ip
+
     def flush(self):
         """
         Flushes the INPUT chain, removing all rules.
@@ -180,4 +188,5 @@ if __name__ == '__main__':
     iptable.block_src_dst_ip('10.10.10.10', '20.20.10.10')
     iptable.block_tcp_packet(src_port=80, dst_port=443, tcp_flag=0)
     iptable.block_udp_packet(src_port=80, dest_port=443)
+    iptable.get_forward_chain_rule()
     iptable.flush()

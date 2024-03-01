@@ -21,5 +21,13 @@ class FilterRule:
         """
         logger.info('Applying rule to the local firewall')
         ipt = IPTableHelper()
+        rule_src_ips = ipt.get_forward_chain_rule_src_ip()
         for line in rules:
-            ipt.block_src_ip(line)
+            try:
+                if line not in rule_src_ips:
+                    logger.info(f'Adding rule: {line}')
+                    ipt.block_src_ip(line)
+                else:
+                    continue
+            except Exception as e:
+                logger.error(f"Error in apply_rule: {e}")
