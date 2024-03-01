@@ -166,7 +166,7 @@ class IPTableHelper:
         rules = self.forward_chain.get_rules()
         for rule in rules:
             rule_str = rule.to_iptables_args()
-            src_ip.append(rule_str)
+            src_ip.append(rule_str[1])
         return src_ip
 
     def flush(self):
@@ -188,5 +188,5 @@ if __name__ == '__main__':
     iptable.block_src_dst_ip('10.10.10.10', '20.20.10.10')
     iptable.block_tcp_packet(src_port=80, dst_port=443, tcp_flag=0)
     iptable.block_udp_packet(src_port=80, dest_port=443)
-    iptable.get_forward_chain_rule()
+    print(iptable.get_forward_chain_rule_src_ip())
     iptable.flush()
