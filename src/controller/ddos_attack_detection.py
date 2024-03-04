@@ -107,8 +107,8 @@ class DDoS:
             for key in self.baseline.keys():
                 if self.baseline[key] > self.threshold:
                     logger.info(f"DDoS attack detected from {sip} to {dip}")
-                    logger.info(f"insert {dip} to blacklist")
-                    db.ip_blacklist_update(dip)
+                    logger.info(f"insert {sip} to blacklist")
+                    db.ip_blacklist_update(sip)
 
             # reset the window
             self.window_interval = self.window_right - self.window_left
