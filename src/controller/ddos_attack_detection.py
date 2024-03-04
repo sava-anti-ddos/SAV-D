@@ -50,9 +50,9 @@ class DDoS:
     def __init__(self):
         self.baseline = {}
         self.count_array = {}
-        self.window_left = 0
-        self.window_right = 0
-        self.window_interval = 0
+        self.window_left = 0.0
+        self.window_right = 0.0
+        self.window_interval = 0.0
         self.threshold = Config.threshold
         self.rule_issuance = IssueRules()
 
@@ -72,11 +72,12 @@ class DDoS:
                 (sip, dip, sport, dport, protocol, flags, timestamp,
                  length) = row
 
+                packet_timestamp = float(timestamp)
                 if self.window_left == 0:
-                    self.window_left = timestamp
+                    self.window_left = packet_timestamp
 
-                if timestamp > self.window_right:
-                    self.window_right = timestamp
+                if packet_timestamp > self.window_right:
+                    self.window_right = packet_timestamp
 
                 if not sip or not dip:
                     continue

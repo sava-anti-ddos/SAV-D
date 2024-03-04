@@ -79,7 +79,7 @@ def db_init():
     # db initialization
     db.create_table()
     # lab blacklist ip
-    db.ip_blacklist_update('40.40.10.10')
+    # db.ip_blacklist_update('40.40.10.10')
 
 
 def banner():
