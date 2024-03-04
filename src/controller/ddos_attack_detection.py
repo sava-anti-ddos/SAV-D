@@ -69,15 +69,16 @@ class DDoS:
         logger.info("Detecting DDoS attack from datas")
         try:
             for row in data:
-                (sip, dip, sport, dport, protocol, flags, timestamp,
+                (sip, dip, sport, dport, protocol, flags, packet_timestamp,
                  length) = row
 
-                packet_timestamp = float(timestamp)
+                timestamp = float(packet_timestamp)
+
                 if self.window_left == 0:
-                    self.window_left = packet_timestamp
+                    self.window_left = timestamp
 
                 if packet_timestamp > self.window_right:
-                    self.window_right = packet_timestamp
+                    self.window_right = timestamp
 
                 if not sip or not dip:
                     continue
