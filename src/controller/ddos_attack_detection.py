@@ -35,6 +35,8 @@ class SAVAPacketSniffer:
         Args:
             sniffer_data (list): List of rows to be written to the CSV file.
         """
+        self.ddos.detect_ddos(sniffer_data)
+
         logger.info("sniffer_receive function: Writing data to file")
         store_file = os.path.join(self.sinffer_read_path,
                                   self.sniffer_file_name)
@@ -105,6 +107,7 @@ class DDoS:
             for key in self.baseline.keys():
                 if self.baseline[key] > self.threshold:
                     logger.info(f"DDoS attack detected from {sip} to {dip}")
+                    logger.info(f"insert {dip} to blacklist")
                     db.ip_blacklist_update(dip)
 
             # reset the window

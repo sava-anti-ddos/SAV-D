@@ -617,8 +617,9 @@ class CSVHandler:
                 with open(file_path, mode='r', encoding=self.encoding) as file:
                     reader = csv.reader(file)
                     for row in reader:
-                        parts = row[0].split(',')
-                        sip, dip, sport, dport, protocol, tcp_flag, timestamp, length = parts
+                        # parts = row[0].split(',')
+                        (sip, dip, sport, dport, protocol, tcp_flag, timestamp,
+                         length) = row
                         sport = int(sport)
                         dport = int(dport)
                         record = {

@@ -251,7 +251,7 @@ class Transport:
                 self.writer.write(data.encode('utf-8'))
                 await self.writer.drain()
 
-                logger.info(f"Data sent: {data}")
+                logger.info(f"Data sent")
             else:
                 logger.info("Connection is closed. Attempting to reconnect...")
                 await self.connect_to_server()
