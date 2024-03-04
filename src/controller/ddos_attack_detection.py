@@ -1,11 +1,11 @@
 import csv
 import os
-import time
 from config import Config
 from log import get_logger
-from rule_issuance import IssueRules
+from ip_blacklist import Database
 
 logger = get_logger(__name__)
+db = Database(Config.db_path)
 
 
 class SAVAPacketSniffer:
@@ -26,6 +26,7 @@ class SAVAPacketSniffer:
         else:
             self.sniffer_file_name = name
         self.sinffer_read_path = Config.readinfo_path
+        self.ddos = DDoS()
 
     def sniffer_receive(self, sniffer_data):
         """
@@ -44,17 +45,18 @@ class SAVAPacketSniffer:
 
         logger.info(f"Store to file: " + store_file)
 
+        self.ddos.detect_ddos(sniffer_data)
+
 
 class DDoS:
 
-    def __init__(self, transport):
+    def __init__(self):
         self.baseline = {}
         self.count_array = {}
         self.window_left = 0.0
         self.window_right = 0.0
         self.window_interval = 0.0
         self.threshold = Config.threshold
-        self.rule_issuance = IssueRules(transport)
 
     async def detect_ddos(self, data):
         """
@@ -103,7 +105,8 @@ class DDoS:
             for key in self.baseline.keys():
                 if self.baseline[key] > self.threshold:
                     logger.info(f"DDoS attack detected from {sip} to {dip}")
-                    await self.rule_issuance.send_rules([sip])
+                    db.ip_blacklist_update(dip)
+
             # reset the window
             self.window_interval = self.window_right - self.window_left
             self.window_left = self.window_right

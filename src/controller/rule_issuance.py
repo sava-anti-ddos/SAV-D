@@ -1,4 +1,5 @@
 from log import get_logger
+from config import Config
 
 logger = get_logger(__name__)
 
@@ -12,7 +13,14 @@ class IssueRules:
         Args:
             transport (TransportServer): The transport server used for sending control messages.
         """
-        self.transport = transport
+        if transport is None:
+            logger.info("No transport server provided")
+            logger.info("Creating a new transport server")
+            from controller import TransportServer
+            self.transport = TransportServer(Config.controller_ip,
+                                             Config.controller_port)
+        else:
+            self.transport = transport
 
     async def send_rules(self, data):
         """
