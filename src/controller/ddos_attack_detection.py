@@ -77,7 +77,7 @@ class DDoS:
                 if self.window_left == 0:
                     self.window_left = timestamp
 
-                if packet_timestamp > self.window_right:
+                if timestamp > self.window_right:
                     self.window_right = timestamp
 
                 if not sip or not dip:
