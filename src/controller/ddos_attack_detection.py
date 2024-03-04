@@ -103,7 +103,7 @@ class DDoS:
             for key in self.baseline.keys():
                 if self.baseline[key] > self.threshold:
                     logger.info(f"DDoS attack detected from {sip} to {dip}")
-                    self.rule_issuance.send_rules([sip])
+                    await self.rule_issuance.send_rules([sip])
             # reset the window
             self.window_interval = self.window_right - self.window_left
             self.window_left = self.window_right
