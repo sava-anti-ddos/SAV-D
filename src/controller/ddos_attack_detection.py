@@ -47,14 +47,14 @@ class SAVAPacketSniffer:
 
 class DDoS:
 
-    def __init__(self):
+    def __init__(self, transport):
         self.baseline = {}
         self.count_array = {}
         self.window_left = 0.0
         self.window_right = 0.0
         self.window_interval = 0.0
         self.threshold = Config.threshold
-        self.rule_issuance = IssueRules()
+        self.rule_issuance = IssueRules(transport)
 
     async def detect_ddos(self, data):
         """

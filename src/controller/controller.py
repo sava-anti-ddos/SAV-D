@@ -5,11 +5,12 @@ from datetime import datetime, timedelta
 from config import Config
 from ddos_attack_detection import SAVAPacketSniffer, DDoS
 from log import get_logger
+from globals import server as transport
 
 logger = get_logger(__name__)
 
 # global ddos instance for dectection
-ddos = DDoS()
+ddos = DDoS(transport)
 
 
 class SAVDProtocol:

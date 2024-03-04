@@ -1,20 +1,12 @@
 import asyncio
-
-from controller import TransportServer
 from config import Config
-from rule_issuance import IssueRules
-from ip_blacklist import CSVHandler, Database
-from filter_rule_generation import RuleGenerator
+from ip_blacklist import CSVHandler
 from log import get_logger
 from pyfiglet import Figlet
 
 logger = get_logger(__name__)
 
-# Create a server instance and all the devices will connect to this
-server = TransportServer(Config.controller_ip, Config.controller_port)
-issue_rules = IssueRules(server)
-db = Database(Config.db_path)
-rule_generator = RuleGenerator(db)
+from globals import server, issue_rules, db, rule_generator
 
 
 async def transport_server():
