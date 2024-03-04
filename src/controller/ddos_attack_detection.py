@@ -60,7 +60,7 @@ class DDoS:
         self.window_interval = 0.0
         self.threshold = Config.threshold
 
-    async def detect_ddos(self, data):
+    def detect_ddos(self, data):
         """
         Detects a DDoS attack.
 
