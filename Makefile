@@ -50,12 +50,14 @@ install:
 
 
 help:
-	@echo "make deps		install dependencies"
-	@echo "make help		display this help message"
-	@echo "make install		install the project"
-	@echo "make run		run the project"
-	@echo "make test		run the tests"
-	@echo "make clean		clean the project"
+	@echo "make deps				install dependencies"
+	@echo "make help				display this help message"
+	@echo "make install				install the project"
+	@echo "make run_savd_controller				run the savd controller"
+	@echo "make run_r2				run the savd r2 device"
+	@echo "make run_r6				run the savd r6 device"
+	@echo "make test				run the tests"
+	@echo "make clean				clean the project"
 
 deps:
 	@echo "Installing dependencies..."
