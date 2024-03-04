@@ -192,7 +192,7 @@ class TransportServer:
             server (tuple): The reader and writer objects representing the server.
             message (str): The received message.
         """
-        logger.info(f"Dispatching message from {client}: {message}")
+        logger.info(f"Dispatching message from {client}")
         try:
             protocol_instance = SAVDProtocol.deserialize(message)
 

@@ -89,7 +89,7 @@ class DDoS:
 
             logger.debug(f"Count array: {self.count_array}")
 
-            for key in self.count_array.keys():
+            for key in list(self.count_array.keys()):
                 (sip, dip, t) = key
                 # clean up the count array
                 if t < self.window_left:
