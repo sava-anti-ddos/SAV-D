@@ -38,12 +38,12 @@ class IPTableHelper:
             match_src_ip = PacketMatch().source_address().equals(src_ip)
             input_chain_rule = ChainRule(match=match_src_ip,
                                          target=Targets.DROP)
-            logger.debug(input_chain_rule.to_iptables_args)
+            logger.debug(input_chain_rule.to_iptables_args())
             self.input_chain.append_rule(input_chain_rule)
 
             forward_chain_rule = ChainRule(match=match_src_ip,
                                            target=Targets.DROP)
-            logger.debug(forward_chain_rule.to_iptables_args)
+            logger.debug(forward_chain_rule.to_iptables_args())
             self.forward_chain.append_rule(forward_chain_rule)
         except Exception as e:
             logger.error(f"Error in block_src_ip: {e}")
@@ -60,12 +60,12 @@ class IPTableHelper:
 
             input_chain_rule = ChainRule(match=match_dst_ip,
                                          target=Targets.DROP)
-            logger.debug(input_chain_rule.to_iptables_args)
+            logger.debug(input_chain_rule.to_iptables_args())
             self.input_chain.append_rule(input_chain_rule)
 
             forward_chain_rule = ChainRule(match=match_dst_ip,
                                            target=Targets.DROP)
-            logger.debug(forward_chain_rule.to_iptables_args)
+            logger.debug(forward_chain_rule.to_iptables_args())
             self.forward_chain.append_rule(forward_chain_rule)
         except Exception as e:
             logger.error(f"Error in block_dst_ip: {e}")
@@ -84,12 +84,12 @@ class IPTableHelper:
 
             input_chain_rule = ChainRule(match=match_src_dst_ip,
                                          target=Targets.DROP)
-            logger.debug(input_chain_rule.to_iptables_args)
+            logger.debug(input_chain_rule.to_iptables_args())
             self.input_chain.append_rule(input_chain_rule)
 
             forward_chain_rule = ChainRule(match=match_src_dst_ip,
                                            target=Targets.DROP)
-            logger.debug(forward_chain_rule.to_iptables_args)
+            logger.debug(forward_chain_rule.to_iptables_args())
             self.forward_chain.append_rule(forward_chain_rule)
         except Exception as e:
             logger.error(f"Error in block_src_dst_ip: {e}")
@@ -123,12 +123,12 @@ class IPTableHelper:
             input_chain_rule = ChainRule(
                 match_list=[match_tcp, match_tcp_packet], target=Targets.DROP)
 
-            logger.debug(input_chain_rule.to_iptables_args)
+            logger.debug(input_chain_rule.to_iptables_args())
             self.input_chain.append_rule(input_chain_rule)
 
             forward_chain_rule = ChainRule(
                 match_list=[match_tcp, match_tcp_packet], target=Targets.DROP)
-            logger.debug(forward_chain_rule.to_iptables_args)
+            logger.debug(forward_chain_rule.to_iptables_args())
             self.forward_chain.append_rule(forward_chain_rule)
         except Exception as e:
             logger.error(f"Error in block_tcp_packet: {e}")
@@ -151,22 +151,52 @@ class IPTableHelper:
 
             input_chain_rule = ChainRule(
                 match_list=[match_udp, match_udp_packet], target=Targets.DROP)
-            logger.debug(input_chain_rule.to_iptables_args)
+            logger.debug(input_chain_rule.to_iptables_args())
             self.input_chain.append_rule(input_chain_rule)
 
             forward_chain_rule = ChainRule(
                 match_list=[match_udp, match_udp_packet], target=Targets.DROP)
-            logger.debug(forward_chain_rule.to_iptables_args)
+            logger.debug(forward_chain_rule.to_iptables_args())
             self.forward_chain.append_rule(forward_chain_rule)
         except Exception as e:
             logger.error(f"Error in block_udp_packet: {e}")
+
+    def block_src_dns_packet(self, src_ip=None, dst_port=None):
+        """
+        Blocks DNS packets based on various criteria.
+
+        Args:
+            src_ip (str, optional): The source IP address to match. Defaults to None.
+            dst_port (int, optional): The destination port to match. Defaults to None.
+        """
+        try:
+            m = PacketMatch().protocol().equals('udp')
+            m.source_address().equals(src_ip)
+
+            match_dns_packet = UdpMatch()
+
+            if dst_port:
+                match_dns_packet.dest_port().equals(dst_port)
+
+            input_chain_rule = ChainRule(match_list=[m, match_dns_packet],
+                                         target=Targets.DROP)
+            print(input_chain_rule.to_iptables_args())
+            logger.debug(input_chain_rule.to_iptables_args())
+            self.input_chain.append_rule(input_chain_rule)
+
+            forward_chain_rule = ChainRule(match_list=[m, match_dns_packet],
+                                           target=Targets.DROP)
+            logger.debug(forward_chain_rule.to_iptables_args())
+            self.forward_chain.append_rule(forward_chain_rule)
+        except Exception as e:
+            logger.error(f"Error in block_src_dns_packet: {e}")
 
     def get_forward_chain_rule_src_ip(self):
         src_ip = []
         rules = self.forward_chain.get_rules()
         for rule in rules:
             rule_str = rule.to_iptables_args()
-            src_ip.append(rule_str[1])
+            src_ip.append(rule_str[3])
         return src_ip
 
     def flush(self):
@@ -183,10 +213,6 @@ class IPTableHelper:
 
 if __name__ == '__main__':
     iptable = IPTableHelper()
-    iptable.block_src_ip('40.40.10.10')
-    iptable.block_dst_ip('30.30.10.10')
-    iptable.block_src_dst_ip('10.10.10.10', '20.20.10.10')
-    iptable.block_tcp_packet(src_port=80, dst_port=443, tcp_flag=0)
-    iptable.block_udp_packet(src_port=80, dest_port=443)
+    iptable.block_src_dns_packet("40.40.10.10", 53)
     print(iptable.get_forward_chain_rule_src_ip())
     iptable.flush()
