@@ -26,7 +26,7 @@ class FilterRule:
             try:
                 if line not in rule_src_ips:
                     logger.info(f'Adding rule: {line}')
-                    ipt.block_src_ip(line)
+                    ipt.block_src_dns_packet(line)
                 else:
                     continue
             except Exception as e:
